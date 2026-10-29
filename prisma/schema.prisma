@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  RESPONDER
+  CONTENT_REVIEWER
+  PARTNER_ANALYST
+}
+
+enum HelpRequestStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  REFERRED
+  CLOSED
+  CANCELLED
+}
+
+enum HelpRequestPriority {
+  NORMAL
+  URGENT
+}
+
+enum ConsentPurpose {
+  CONTACT_FOR_HELP
+  SHARE_WITH_SERVICE
+  FOLLOW_UP
+}
+
+enum ConsentDecision {
+  GRANTED
+  DECLINED
+  REVOKED
+}
+
+enum ContentStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  ARCHIVED
+}
+
+enum ServiceType {
+  CLINIC
+  LEGAL_AID
+  SOCIAL_WELFARE
+  SHELTER
+  COUNSELLING
+  OTHER
+}
+
+enum Channel {
+  WEB
+  USSD
+  SMS
+  WHATSAPP
+  STAFF
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  displayName     String
+  role            UserRole @default(RESPONDER)
+  districtCode    String?
+  isActive        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  assignedCases   HelpRequest[] @relation("AssignedCases")
+  reviewedContent Content[] @relation("ContentReviewer")
+  auditEvents     AuditEvent[]
+}
+
+model Content {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  language       String        @default("sw")
+  topic          String
+  shortText      String
+  fullText       String
+  sourceName     String
+  sourceUrl      String?
+  status         ContentStatus @default(DRAFT)
+  reviewerId     String?
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  publishedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  reviewer       User?         @relation("ContentReviewer", fields: [reviewerId], references: [id])
+  @@index([status, language, topic])
+}
+
+model ServiceDirectoryEntry {
+  id             String      @id @default(cuid())
+  name           String
+  type           ServiceType
+  districtCode   String
+  region         String
+  phonePublic    String?
+  address        String?
+  openingHours   String?
+  languages      String[]    @default([])
+  verificationOrg String
+  verifiedBy     String
+  verifiedAt     DateTime
+  expiresAt      DateTime?
+  isActive       Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  @@index([districtCode, type, isActive])
+}
+
+model HelpRequest {
+  id                 String             @id @default(cuid())
+  caseCode           String             @unique
+  topic              String
+  districtCode       String
+  channel             Channel
+  status              HelpRequestStatus  @default(PENDING)
+  priority            HelpRequestPriority @default(NORMAL)
+  consentToContact    Boolean            @default(false)
+  contactCiphertext  String?
+  contactHash         String?
+  assignedResponderId String?
+  createdAt           DateTime           @default(now())
+  acceptedAt          DateTime?
+  closedAt            DateTime?
+  lastAlertAt         DateTime?
+  escalationCount     Int                @default(0)
+  assignedResponder   User?              @relation("AssignedCases", fields: [assignedResponderId], references: [id])
+  consents             ConsentRecord[]
+  referrals            Referral[]
+  @@index([status, districtCode, priority, createdAt])
+  @@index([contactHash])
+}
+
+model ConsentRecord {
+  id             String          @id @default(cuid())
+  helpRequestId  String
+  purpose        ConsentPurpose
+  decision       ConsentDecision
+  wordingVersion String
+  channel        Channel
+  createdAt      DateTime        @default(now())
+  helpRequest    HelpRequest     @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  @@index([helpRequestId, purpose, createdAt])
+}
+
+model Referral {
+  id                String   @id @default(cuid())
+  helpRequestId     String
+  serviceEntryId    String?
+  status            String   @default("OFFERED")
+  consentGranted    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  helpRequest       HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  @@index([helpRequestId])
+}
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  actorUserId   String?
+  action        String
+  resourceType  String
+  resourceId    String?
+  outcome       String
+  requestId     String?
+  createdAt     DateTime @default(now())
+  actor         User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([createdAt, action])
+  @@index([resourceType, resourceId])
+}
+
+model AnonymousMetric {
+  id          String   @id @default(cuid())
+  metricKey   String
+  districtCode String?
+  channel     Channel?
+  bucketDate  DateTime
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+  @@unique([metricKey, districtCode, channel, bucketDate])
+  @@index([metricKey, bucketDate])
+}
