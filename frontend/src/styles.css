@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --color-paper: #ffffff;
+  --color-ink: #111111;
+  --color-muted: #6b6570;
+  --color-line: #efe6ea;
+  --color-wash: #fbf6f8;
+  --color-soft: #fff8fb;
+  --color-invert: #0a0a0a;
+  --color-pink: #f03486;
+  --color-orange: #ff7a18;
+  --color-blue: #2f6dff;
+  --radius-pill: 999px;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--font-display); }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+}
+
+.brand-text {
+  background-image: linear-gradient(100deg, var(--color-blue) 0%, var(--color-pink) 52%, var(--color-orange) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-fill {
+  background-image: linear-gradient(100deg, var(--color-blue) 0%, var(--color-pink) 48%, var(--color-orange) 100%);
+}
+/* Logo marquee (see src/components/logo-marquee.tsx) */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track { animation: marquee-scroll 20s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+}
