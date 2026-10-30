@@ -1,12 +1,16 @@
+
 name: Backend CI
+
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, frontend]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, frontend]
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:16
@@ -14,24 +18,44 @@ jobs:
           POSTGRES_DB: salamaline
           POSTGRES_USER: salamaline
           POSTGRES_PASSWORD: salamaline_dev_password
-        ports: ["5432:5432"]
+        ports:
+          - "5432:5432"
         options: >-
           --health-cmd "pg_isready -U salamaline -d salamaline"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+
     env:
       DATABASE_URL: postgresql://salamaline:salamaline_dev_password@localhost:5432/salamaline?schema=public
       JWT_ACCESS_SECRET: ci-only-secret-that-is-long-enough-for-tests-123
       CONTACT_HASH_SECRET: ci-only-contact-hash-secret-at-least-32-chars
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm install
-      - run: npx prisma generate
-      - run: npx prisma migrate deploy
-      - run: npm run build
-      - run: npm test -- --runInBand
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Run database migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test -- --runInBand
