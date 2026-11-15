@@ -18,12 +18,25 @@ export class KnowledgeRetrievalService {
     'they', 'your', 'you', 'our', 'out', 'about', 'after', 'before', 'between',
     'over', 'under', 'again', 'also', 'some', 'such', 'its', 'more', 'most',
     'una', 'hiyo', 'hiki', 'hivyo', 'ambayo', 'katika', 'kwa', 'zaidi', 'au',
+    'je', 'ni', 'ya', 'wa', 'na', 'za', 'the', 'does', 'say', 'about', 'what', 'is', 'are',
   ]);
+
+  private readonly conceptTerms: Array<{ pattern: RegExp; tokens: string[] }> = [
+    { pattern: /ukeketaji|female genital mutilation|\bfgm\b|genital cutting/i, tokens: ['ukeketaji', 'fgm', 'genital', 'mutilation', 'girl', 'mtoto', 'child'] },
+    { pattern: /ndoa.{0,16}(utotoni|mtoto)|child marriage|married.{0,10}child/i, tokens: ['ndoa', 'utotoni', 'marriage', 'child', 'mtoto', 'age', 'umri'] },
+    { pattern: /\b(kupiga|kupigwa|anampiga|kumpiga)\b|hit(ting)? a child|corporal punishment/i, tokens: ['kupiga', 'child', 'mtoto', 'punishment', 'correction', 'harm', 'violence'] },
+    { pattern: /elimu|shule|kusoma|school|education|study|kujielimisha/i, tokens: ['elimu', 'shule', 'kusoma', 'education', 'school', 'child', 'mtoto', 'rights', 'haki'] },
+    { pattern: /ukatili|unyanyas|abuse|violence|harm|hatar|salama|protection|kulind/i, tokens: ['violence', 'abuse', 'protection', 'child', 'mtoto', 'safety', 'usalama', 'rights', 'haki'] },
+    { pattern: /katiba|constitution|haki za msingi|fundamental rights|usawa|equality/i, tokens: ['katiba', 'constitution', 'rights', 'haki', 'equality', 'usawa', 'human', 'binadamu'] },
+  ];
 
   constructor(private readonly loader: KnowledgeLoaderService) {}
 
   search(question: string, language: 'sw' | 'en', limit = 4): RetrievedKnowledge[] {
-    const queryTokens = this.tokenize(question);
+    const queryTokens = [...new Set([
+      ...this.tokenize(question),
+      ...this.conceptTerms.filter((item) => item.pattern.test(question)).flatMap((item) => item.tokens),
+    ])];
     if (!queryTokens.length) return [];
 
     return this.loader.getAll()
@@ -33,19 +46,26 @@ export class KnowledgeRetrievalService {
           record.title || '',
           record.topic || '',
           Array.isArray(record.keywords) ? record.keywords.join(' ') : '',
+          typeof record['question_sw'] === 'string' ? record['question_sw'] : '',
+          typeof record['question_en'] === 'string' ? record['question_en'] : '',
           text,
           record.scope || '',
         ].join(' '));
         const unique = new Set(searchable);
-        let score = 0;
+        let matches = 0;
         for (const token of queryTokens) {
-          if (unique.has(token)) score += 1;
+          if (unique.has(token)) matches += 1;
         }
-        const coverage = score / Math.max(queryTokens.length, 1);
-        const density = score / Math.max(Math.sqrt(unique.size), 1);
-        return { record, score: coverage * 0.75 + density * 0.25, text };
+        const coverage = matches / Math.max(queryTokens.length, 1);
+        const density = matches / Math.max(Math.sqrt(unique.size), 1);
+        let score = coverage * 0.75 + density * 0.25;
+        if (record.type === 'legal_evidence') score *= 1.3;
+        if (record.type === 'example_qa') score *= 1.15;
+        if (record.source_type === 'constitution' && record.verified !== true) score *= 0.35;
+        if (record.verified === true) score *= 1.15;
+        return { record, score, text };
       })
-      .filter((item) => item.score >= 0.08)
+      .filter((item) => item.score >= 0.06)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
   }
@@ -56,7 +76,8 @@ export class KnowledgeRetrievalService {
     }
     if (typeof record.content === 'string') return record.content;
     if (record.content && typeof record.content === 'object') {
-      const selected = record.content[language] || record.content.en || record.content.sw;
+      const content = record.content as { sw?: string; en?: string };
+      const selected = content[language] || content.en || content.sw;
       if (typeof selected === 'string') return selected;
     }
     const fallback = record[language] || record['content_text'];

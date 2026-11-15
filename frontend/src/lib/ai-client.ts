@@ -3,12 +3,27 @@ export type AiLanguage = "sw" | "en";
 export interface AiSource {
   id: string;
   name: string;
+  reference?: string;
+  url?: string;
 }
 
 export interface AiAnswer {
   answer: string;
+  directAnswer?: string;
+  explanation?: string;
+  guidance?: string;
   language: AiLanguage;
   sources: AiSource[];
+  legalReferences?: Array<{
+    source: string;
+    reference: string;
+    verified: boolean;
+    jurisdiction?: string;
+    url?: string;
+    note?: string;
+  }>;
+  status?: "answered" | "no_reliable_answer" | "safety_guidance";
+  generatedBy?: "grounded_fallback" | "configured_llm";
   safety?: { escalate?: boolean; humanSupportRecommended?: boolean };
   disclaimer?: string;
   note?: string;

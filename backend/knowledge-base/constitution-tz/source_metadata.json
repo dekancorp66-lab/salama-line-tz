@@ -1,0 +1,55 @@
+{
+  "source_id": "tanzania_constitution",
+  "document_title": "Katiba ya Jamhuri ya Muungano wa Tanzania, ya mwaka 1977",
+  "jurisdiction": "United Republic of Tanzania",
+  "language": "sw",
+  "source_type": "constitution",
+  "source_pdf": "KATIBA YA JAMHURI YA MUUNGANO WA TANZANIA YA MWAKA 1977 (2).pdf",
+  "pdf_pages": 209,
+  "pdf_metadata_title": "KATIBA JAMH Ndogo (SWAHILI) GP.pmd",
+  "pdf_creation_date": "2020-12-15T11:36:36Z",
+  "document_date_stated_in_pdf": "26 Aprili, 1977 (commencement date stated in Article 152(2))",
+  "publication_date": null,
+  "edition_statement": null,
+  "issuing_institution_as_explicitly_named_on_cover": null,
+  "amendment_references_listed_in_pdf": [
+    "Sheria Na. 14 ya 1979",
+    "Sheria Na. 1 na 28 za 1980",
+    "Sheria Na. 21 ya 1982",
+    "Sheria Na. 15 ya 1984",
+    "Sheria Na. 14 na 16 za 1990",
+    "Sheria Na. 4 na 20 za 1992",
+    "Sheria Na. 7 ya 1993",
+    "Sheria Na. 7 na 34 za 1994",
+    "Sheria Na. 12 ya 1995",
+    "Sheria Na. 3 ya 2000",
+    "Sheria Na. 1 ya 2005",
+    "T.S. Na. 133 ya 2001",
+    "T.S. Na. 150 ya 2005"
+  ],
+  "article_inventory_count": 162,
+  "numbered_article_range": "1-152",
+  "lettered_articles_in_contents": [
+    "46A",
+    "46B",
+    "53A",
+    "59A",
+    "59B",
+    "107A",
+    "107B",
+    "110A",
+    "113A",
+    "120A"
+  ],
+  "schedules_in_document": [
+    "Nyongeza ya Kwanza",
+    "Nyongeza ya Pili"
+  ],
+  "verified": false,
+  "notes": [
+    "The PDF does not state a separate publication date or edition label on its opening/title pages.",
+    "The listed amendment references are transcribed from the PDF; they do not establish that this is the latest consolidated edition.",
+    "The English attachment is a separate 91-page document and was not used to replace or supplement the Kiswahili primary source.",
+    "Article-level full-text segmentation has not yet been produced or legally verified."
+  ]
+}
