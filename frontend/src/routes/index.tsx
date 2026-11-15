@@ -95,6 +95,9 @@ function Home() {
                   {l.label}
                 </a>
               ))}
+              <a href="/ai" className="rounded-full bg-pink px-4 py-2 text-sm font-medium text-paper transition hover:bg-[#d92875]">
+                AI Assistant
+              </a>
             </nav>
             <div className="flex items-center gap-2">
               <a
@@ -130,6 +133,9 @@ function Home() {
                   {l.label}
                 </a>
               ))}
+              <a href="/ai" onClick={() => setOpen(false)} className="my-2 block rounded-full bg-pink px-4 py-3 text-center text-sm font-medium text-paper">
+                SalamaLine AI Assistant
+              </a>
               <a
                 href="#partner"
                 onClick={() => setOpen(false)}

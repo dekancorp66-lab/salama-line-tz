@@ -1,0 +1,69 @@
+{
+  "package": "SalamaLine AI Knowledge Package",
+  "version": "0.1.0",
+  "geographic_scope": "Mainland Tanzania only",
+  "generated_date": "2026-11-15",
+  "sources": [
+    {
+      "source_id": "WHO_TRAINING_2021",
+      "title": "Caring for Women Subjected to Violence: A WHO Training Curriculum for Health Care Providers, Revised Edition",
+      "year": 2021,
+      "issuer": "World Health Organization",
+      "document_type": "Global health-care training curriculum",
+      "jurisdiction": "Global guidance; not Tanzania law",
+      "scope_note": "Primarily addresses health-care responses to violence against women. It is not a child-specific standard and is not a Tanzania referral directory.",
+      "license_note": "CC BY-NC-SA 3.0 IGO; review licensing conditions before commercial reuse or adaptation.",
+      "source_file_id": "file_00000000b8a082468e636e07c036b925",
+      "use_limitations": [
+        "Do not present as Tanzanian legislation.",
+        "Do not assume its adult-women guidance is sufficient for children or adolescents under 18.",
+        "Do not infer local referral contacts from this document."
+      ]
+    },
+    {
+      "source_id": "TZA_LCA_2023",
+      "title": "The Law of the Child Act, Cap. 13, Revised Edition 2023",
+      "year": 2023,
+      "issuer": "United Republic of Tanzania",
+      "document_type": "Legislation",
+      "jurisdiction": "Mainland Tanzania",
+      "scope_note": "The Act's application clause identifies Mainland Tanzania. Do not apply it to Zanzibar.",
+      "source_file_id": "file_00000000b8a082468e636e07c036b925",
+      "use_limitations": [
+        "Use only within the Act's jurisdiction and actual provisions.",
+        "Do not use AI to determine guilt, make legal findings, or replace social welfare officers, police, courts, or lawyers.",
+        "This package summarizes selected provisions; it is not a full legal commentary."
+      ]
+    },
+    {
+      "source_id": "WHO_CLINICAL_HANDBOOK_2014",
+      "title": "Health Care for Women Subjected to Intimate Partner Violence or Sexual Violence: A Clinical Handbook",
+      "year": 2014,
+      "issuer": "World Health Organization",
+      "document_type": "Clinical support handbook",
+      "jurisdiction": "Global health guidance; not Tanzania law",
+      "scope_note": "Provides first-line support and clinical-care guidance for women. It does not replace current Tanzanian clinical protocols and is not specifically designed as a child/adolescent protocol.",
+      "source_file_id": "file_00000000253482469ecbbcd1aba9f363",
+      "use_limitations": [
+        "Clinical procedures and treatment information must be checked against current Mainland Tanzania clinical guidance by qualified professionals.",
+        "Do not diagnose, prescribe, or direct forensic examinations.",
+        "For children and adolescents, use child-specific standards and applicable Mainland child-protection law."
+      ]
+    },
+    {
+      "source_id": "TZA_NPA_VAWC_II_2024_2029",
+      "title": "The National Plan of Action to End Violence Against Women and Children (NPA-VAWC II 2024/25–2028/29)",
+      "year": 2024,
+      "issuer": "United Republic of Tanzania",
+      "document_type": "National policy and implementation plan",
+      "jurisdiction": "Tanzania national plan; this package is configured for Mainland Tanzania implementation only",
+      "scope_note": "The package does not configure Zanzibar referrals, legal rules, or service contacts. Confirm the plan's institutional coverage and Mainland implementation arrangements before production use.",
+      "source_file_id": "file_000000009298824691e0436e150fa62f",
+      "use_limitations": [
+        "A policy plan is not itself a substitute for legislation.",
+        "Do not infer that SalamaLine is endorsed, funded, or connected to government mechanisms.",
+        "Do not treat plan indicators or historical survey figures as current real-time prevalence."
+      ]
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import { HelpRequestsModule } from './help-requests/help-requests.module';
 import { AdminModule } from './admin/admin.module';
 import { AuditModule } from './audit/audit.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { IntegrationsModule } from './integrations/integrations.module';
     AdminModule,
     AuditModule,
     IntegrationsModule,
+    AiModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
