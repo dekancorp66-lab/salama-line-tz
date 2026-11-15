@@ -8,7 +8,7 @@ export const Route = createFileRoute("/ai")({
   component: AiAssistant,
 });
 
-type Message = { id: number; role: "user" | "assistant"; text: string; sources?: AiSource[]; disclaimer?: string; note?: string; noAnswer?: boolean };
+type Message = { id: number; role: "user" | "assistant"; text: string; directAnswer?: string; explanation?: string; guidance?: string; sources?: AiSource[]; note?: string; noAnswer?: boolean };
 
 const copy = {
   sw: {
@@ -82,10 +82,11 @@ function AiAssistant() {
       const result: AiAnswer = await askAi(text, language);
       const answerText = typeof result.answer === "string" ? result.answer : "";
       if (!answerText) throw new Error("SalamaLine AI returned an empty answer. Please try again.");
-      const noAnswer = result.sources.length === 0 && /not have enough verified information|sina taarifa zilizothibitishwa/i.test(answerText);
+      const noAnswer = result.status === "no_reliable_answer" || (result.sources.length === 0 && /not have enough (verified )?information|not have enough evidence|sina (taarifa zilizothibitishwa|ushahidi wa kutosha)/i.test(answerText));
       setMessages((previous) => [...previous, {
         id: ++nextId.current, role: "assistant", text: answerText,
-        sources: result.sources, disclaimer: result.disclaimer, note: result.note, noAnswer,
+        directAnswer: result.directAnswer, explanation: result.explanation, guidance: result.guidance,
+        sources: result.sources, note: result.note, noAnswer,
       }]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "We couldn’t get an answer. Please try again.");
@@ -146,10 +147,13 @@ function AiAssistant() {
               {message.role === "assistant" && <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#edf4ff] text-blue"><Bot size={18} /></span>}
               <div className={`max-w-[88%] sm:max-w-[78%] ${message.role === "user" ? "rounded-2xl rounded-tr-sm bg-[#f03486] px-4 py-3 text-white" : "rounded-2xl rounded-tl-sm bg-[#f5f7fb] px-4 py-3 text-ink"}`}>
                 {message.noAnswer && <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#89540a]"><CircleAlert size={14} />{t.noAnswer}</p>}
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
-                {!!message.sources?.length && <div className="mt-4 border-t border-black/10 pt-3"><p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted"><BookOpen size={14} />{t.sources}</p><ul className="space-y-1.5">{message.sources.map((source) => <li key={source.id} className="flex gap-1.5 text-xs leading-relaxed text-muted"><Check size={13} className="mt-0.5 shrink-0 text-emerald-700" />{source.name}</li>)}</ul></div>}
+                {message.role === "assistant" && message.directAnswer ? <>
+                  <p className="whitespace-pre-wrap text-[15px] font-semibold leading-relaxed">{message.directAnswer}</p>
+                  {message.explanation && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{message.explanation}</p>}
+                  {message.guidance && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed">{message.guidance}</p>}
+                </> : <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>}
+                {!!message.sources?.length && <div className="mt-4 border-t border-black/10 pt-3"><p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted"><BookOpen size={14} />{language === "sw" ? "Vyanzo vya taarifa" : "Sources"}</p><ul className="space-y-1.5">{message.sources.map((source) => <li key={source.id} className="flex gap-1.5 text-xs leading-relaxed text-muted"><Check size={13} className="mt-0.5 shrink-0 text-emerald-700" /><span>{source.url ? <a href={source.url} target="_blank" rel="noreferrer" className="font-medium text-pink underline underline-offset-2">{source.name}</a> : source.name}</span></li>)}</ul></div>}
                 {message.note && <p className="mt-3 text-xs leading-relaxed text-muted">{message.note}</p>}
-                {message.disclaimer && <p className="mt-3 border-t border-black/10 pt-2 text-xs leading-relaxed text-muted">{message.disclaimer}</p>}
               </div>
               {message.role === "user" && <span aria-hidden="true" className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#fce7f1] text-xs font-semibold text-pink">{language === "sw" ? "WE" : "YOU"}</span>}
             </article>)}
