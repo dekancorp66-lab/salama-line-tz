@@ -33,15 +33,15 @@ function Dashboard() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 md:px-6">
+    <main className="mx-auto max-w-5xl px-4 py-10 md:px-6 md:py-14">
       <p className="text-sm font-medium text-pink">Partner dashboard</p>
-      <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">Anonymous, aggregated trends</h1>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-5xl">Anonymous, aggregated trends</h1>
       <p className="mt-2 max-w-2xl text-muted">No names, numbers or messages appear here. Any count under 5 is hidden so no individual can be identified.</p>
 
-      <form onSubmit={load} className="mt-6 flex max-w-md gap-2">
+      <form onSubmit={load} className="mt-7 flex max-w-md gap-2 rounded-2xl border border-line bg-paper p-2 shadow-sm focus-within:border-pink focus-within:ring-2 focus-within:ring-pink/15">
         <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Access token" autoComplete="off" aria-label="Access token"
-          className="min-w-0 flex-1 rounded-full border border-line px-4 py-2" />
-        <button disabled={busy} className="brand-fill rounded-full px-5 py-2 font-semibold text-paper">{busy ? "Loading…" : "View"}</button>
+          className="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-2 outline-none placeholder:text-muted/70" />
+        <button disabled={busy} className="brand-fill min-h-10 rounded-xl px-5 py-2 font-semibold text-white disabled:opacity-50">{busy ? "Loading…" : "View"}</button>
       </form>
       {err && <p role="alert" className="mt-3 text-sm text-pink">{err}</p>}
 
@@ -54,7 +54,7 @@ function Dashboard() {
               ["Answered in 30 min", data.response.within30Min ?? "—"],
               ["Median minutes to answer", data.response.medianMinutesToAnswer ?? "—"],
             ].map(([k, v]) => (
-              <div key={String(k)} className="bg-paper p-5"><p className="text-3xl font-semibold">{String(v)}</p><p className="mt-1 text-sm text-muted">{String(k)}</p></div>
+              <div key={String(k)} className="bg-paper p-5 md:p-6"><p className="text-3xl font-semibold">{String(v)}</p><p className="mt-1 text-sm text-muted">{String(k)}</p></div>
             ))}
           </section>
           {([["By topic and action", data.byEvent], ["By channel", data.byChannel], ["By district", data.byDistrict]] as [string, Table][]).map(([title, t]) => (
@@ -63,8 +63,8 @@ function Dashboard() {
               <div className="mt-3 h-56 w-full">
                 <ResponsiveContainer>
                   <BarChart data={t.rows.map((r) => ({ name: r.name, count: typeof r.count === "number" ? r.count : 0 }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#efe6ea" /><XAxis dataKey="name" fontSize={11} interval={0} angle={-20} textAnchor="end" height={60} /><YAxis allowDecimals={false} fontSize={11} /><Tooltip />
-                    <Bar dataKey="count" fill="#f03486" radius={[6, 6, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" /><XAxis dataKey="name" fontSize={11} interval={0} angle={-20} textAnchor="end" height={60} /><YAxis allowDecimals={false} fontSize={11} /><Tooltip />
+                    <Bar dataKey="count" fill="var(--brand-pink)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
