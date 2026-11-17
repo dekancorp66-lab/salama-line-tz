@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { RetrievedKnowledge } from "./knowledge/knowledge-retrieval.service";
 
 export type ScopeDecision =
-  "relevant" | "greeting" | "thanks" | "clarify" | "out_of_scope";
+  "relevant" | "greeting" | "thanks" | "identity" | "clarify" | "out_of_scope";
 
 @Injectable()
 export class AiScopePolicyService {
@@ -10,6 +10,8 @@ export class AiScopePolicyService {
     /^(hi|hello|hey|habari|hujambo|mambo|good morning|good afternoon|good evening)(?:[,!?.\s]+(?:how are you|how's it going|what's up|ukoje))?[!.?,\s]*$/i;
   private readonly thanks =
     /^(thanks|thank you|thank you so much|asante|asante sana|shukrani)(?:[,!?.\s]+(?:that helps|that helped|that's helpful|that was helpful|for your help|nimeelewa|sana))?[!.?,\s]*$/i;
+  private readonly identity =
+    /^(?:who are you|what is your name|what's your name|tell me about yourself|introduce yourself|what can you help me with|what can you do|unaitwa nani|jina lako nani|wewe ni nani|jitambulishe|unaweza kusaidia nini|unaweza kufanya nini)[!.?\s]*$/i;
 
   // Explicit task intent matters: a domain word inside an unrelated coding,
   // entertainment, or homework request does not make that task in scope.
@@ -60,6 +62,7 @@ export class AiScopePolicyService {
       return "out_of_scope";
     if (this.greetings.test(text)) return "greeting";
     if (this.thanks.test(text)) return "thanks";
+    if (this.identity.test(text)) return "identity";
 
     if (
       /^(and|also|but|then|what about (it|that|her|him|them|this)|how about (it|that|her|him|them|this)|does that|would that|na je|vipi kuhusu (hilo|huyo|hiyo)|na pia|na akisema|akikataa|akikubali)\b/i.test(

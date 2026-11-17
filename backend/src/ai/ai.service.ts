@@ -25,12 +25,7 @@ export class AiService {
       service: "SalamaLine AI",
       knowledgeBase: { loaded: records > 0, records },
       answerGeneration: {
-        mode:
-          process.env.GEMINI_ENABLED === "true" &&
-          process.env.GEMINI_MINOR_SAFEGUARDS_CONFIRMED === "true" &&
-          process.env.GEMINI_API_KEY
-            ? "gemini_with_grounded_fallback"
-            : "grounded_fallback",
+        mode: this.generation.providerMode(),
       },
     };
   }
@@ -80,7 +75,7 @@ export class AiService {
   }
 
   private scopeResponse(
-    scope: "greeting" | "thanks" | "clarify" | "out_of_scope",
+    scope: "greeting" | "thanks" | "identity" | "clarify" | "out_of_scope",
     language: Language,
     safety: ReturnType<AiService["assessSafety"]>,
   ): Pick<
@@ -110,6 +105,10 @@ export class AiService {
         language === "sw"
           ? "Karibu. Nipo hapa kusaidia."
           : "You’re welcome. I’m here to help.",
+      identity:
+        language === "sw"
+          ? "Mimi ni Msaidizi wa SalamaLine. Naweza kueleza kwa lugha rahisi kuhusu haki za watoto na wanawake, usalama na ulinzi, afya, elimu, pamoja na sheria na sera za Tanzania. Jibu langu si mbadala wa mtaalamu; huhitaji kushiriki jina au taarifa binafsi. Una swali gani?"
+          : "I’m SalamaLine’s assistant. I can explain children’s and women’s rights, safety and protection, health, education, and Tanzanian laws and policies in plain language. I’m not a substitute for a trained professional, and you don’t need to share identifying details. What would you like help with?",
       clarify:
         language === "sw"
           ? "Naweza kusaidia. Tafadhali taja kidogo mada unayorejelea—kwa mfano haki, afya, elimu au usalama."
@@ -119,7 +118,8 @@ export class AiService {
           ? "SalamaLine inalenga haki za watoto na wanawake, afya, elimu, sheria na sera za Tanzania, pamoja na usalama na huduma za msaada zilizothibitishwa. Siwezi kusaidia ombi lisilohusiana na mada hizo."
           : "SalamaLine focuses on children’s and women’s rights, health, education, Tanzanian laws and policies, and safeguarding or verified support services. I can’t help with requests unrelated to those topics.",
     }[scope];
-    const answered = scope === "greeting" || scope === "thanks";
+    const answered =
+      scope === "greeting" || scope === "thanks" || scope === "identity";
     return {
       answer: directAnswer,
       directAnswer,
@@ -152,7 +152,7 @@ export class AiService {
 
   private detectLanguage(question: string): Language {
     const swWords =
-      /\b(nina|nini|vipi|je|msaada|mtoto|ukatili|sheria|nawezaje|tafadhali|wapi|yangu|kwangu|ukeketaji|haki|elimu|ndoa|katiba|asante|shukrani)\b/i;
+      /\b(nina|nini|vipi|je|msaada|mtoto|ukatili|sheria|nawezaje|tafadhali|wapi|yangu|kwangu|ukeketaji|haki|elimu|ndoa|katiba|asante|shukrani|unaitwa|jitambulishe|wewe|jina|nani)\b/i;
     return swWords.test(question) ||
       /^\s*(habari|hujambo|mambo)\b/i.test(question)
       ? "sw"

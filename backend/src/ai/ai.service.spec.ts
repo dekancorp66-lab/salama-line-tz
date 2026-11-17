@@ -8,10 +8,10 @@ describe("SalamaLine AI grounded answers", () => {
   let service: AiService;
 
   beforeEach(() => {
-    delete process.env.GEMINI_API_KEY;
-    delete process.env.GEMINI_MODEL;
-    delete process.env.GEMINI_ENABLED;
-    delete process.env.GEMINI_MINOR_SAFEGUARDS_CONFIRMED;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_MODEL;
+    process.env.OPENAI_ENABLED = "false";
+    process.env.OPENAI_MINOR_SAFEGUARDS_CONFIRMED = "false";
     const loader = new KnowledgeLoaderService();
     loader.load();
     service = new AiService(
@@ -79,6 +79,21 @@ describe("SalamaLine AI grounded answers", () => {
     expect(result.directAnswer).toContain("welcome");
     const swahili = await service.ask("Asante sana!");
     expect(swahili.directAnswer).toContain("Karibu");
+  });
+
+  it("introduces SalamaLine naturally in English and Swahili", async () => {
+    const swahili = await service.ask("unaitwa nani");
+    expect(swahili.language).toBe("sw");
+    expect(swahili.status).toBe("answered");
+    expect(swahili.directAnswer).toMatch(/Mimi ni Msaidizi wa SalamaLine/);
+
+    const introduction = await service.ask("jitambulishe", "sw");
+    expect(introduction.status).toBe("answered");
+    expect(introduction.directAnswer).toContain("Una swali gani?");
+
+    const english = await service.ask("Who are you?", "en");
+    expect(english.status).toBe("answered");
+    expect(english.directAnswer).toMatch(/I'm SalamaLine’s assistant/);
   });
 
   it("answers a relevant education question phrased as a real-world situation", async () => {
@@ -255,10 +270,7 @@ describe("SalamaLine AI grounded answers", () => {
     expect(result.guidance).toContain("usimkabili");
   });
 
-  it("keeps urgent child-safety disclosures on the local path even when Gemini is enabled", async () => {
-    process.env.GEMINI_ENABLED = "true";
-    process.env.GEMINI_MINOR_SAFEGUARDS_CONFIRMED = "true";
-    process.env.GEMINI_API_KEY = "test-key";
+  it("keeps urgent child-safety disclosures on the local path", async () => {
     const result = await service.ask(
       "Ninawezaje kupata msaada ikiwa mtoto yuko kwenye hatari?",
       "sw",

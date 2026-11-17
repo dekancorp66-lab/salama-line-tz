@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import { RetrievedKnowledge } from "./knowledge/knowledge-retrieval.service";
 import { KnowledgeRecord } from "./knowledge/knowledge-loader.service";
 
@@ -31,7 +31,13 @@ export interface GeneratedAnswer {
 
 @Injectable()
 export class AnswerGenerationService {
-  private gemini?: GoogleGenAI;
+  private openai?: OpenAI;
+
+  providerMode(): "openai_with_grounded_fallback" | "grounded_fallback" {
+    return this.openAiIsAvailable()
+      ? "openai_with_grounded_fallback"
+      : "grounded_fallback";
+  }
   async generate(
     question: string,
     language: Language,
@@ -76,8 +82,9 @@ export class AnswerGenerationService {
           question,
         ));
 
-    const llmAnswer = await this.generateWithConfiguredProvider(
+    const llmAnswer = await this.generateWithOpenAi(
       intent,
+      question,
       language,
       evidence,
       safetyRules,
@@ -786,8 +793,9 @@ export class AnswerGenerationService {
     return result;
   }
 
-  private async generateWithConfiguredProvider(
+  private async generateWithOpenAi(
     intent: string,
+    question: string,
     language: Language,
     evidence: RetrievedKnowledge[],
     safetyRules: Array<{ rule: string; action: string }>,
@@ -795,43 +803,28 @@ export class AnswerGenerationService {
     GeneratedAnswer,
     "directAnswer" | "explanation" | "guidance"
   > | null> {
-    const apiKey = process.env.GEMINI_API_KEY;
-    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-    // Serving minors requires explicit organizational confirmation. Provider
-    // requests receive only a broad topic and curated evidence, never user text.
-    if (
-      process.env.GEMINI_ENABLED !== "true" ||
-      process.env.GEMINI_MINOR_SAFEGUARDS_CONFIRMED !== "true"
-    )
-      return null;
-    if (
-      !apiKey ||
-      !evidence.length ||
-      ![
-        "education",
-        "disability_education",
-        "equality",
-        "constitution_rights",
-        "constitution_article_11",
-        "constitution_article_12",
-        "constitution_article_13",
-        "fgm",
-        "child_marriage",
-        "hitting_child",
-      ].includes(intent)
-    )
+    if (!this.openAiIsAvailable() || this.mustStayLocal(question, intent))
       return null;
 
+    const verifiedEvidence = evidence.filter(
+      ({ record }) => record.verified === true,
+    );
+    if (!verifiedEvidence.length) return null;
+
     try {
-      this.gemini ||= new GoogleGenAI({ apiKey });
-      const response = await this.gemini.interactions.create({
-        model,
-        system_instruction: `You are SalamaLine, a safeguarding-first assistant for Mainland Tanzania. Answer in ${language === "sw" ? "natural, conversational Kiswahili used in Tanzania" : "natural, clear English"}. Use only the supplied evidence. Never invent facts, legal conclusions, contacts or services. Distinguish Mainland Tanzania from Zanzibar. Do not diagnose, prescribe, blame, pressure disclosure/reporting, encourage confrontation, or claim to contact emergency services. Return JSON with directAnswer, explanation, optional guidance. Keep it concise and age-appropriate.`,
-        // Deliberately omit the user's wording. Sensitive disclosures and
-        // identifying details remain on local safeguarding/fallback paths.
+      this.openai ||= new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+        timeout: 12_000,
+        maxRetries: 1,
+      });
+      const response = await this.openai.responses.create({
+        model: process.env.OPENAI_MODEL || "gpt-6-luna",
+        instructions: `You are SalamaLine, a safeguarding-first educational assistant for Mainland Tanzania. Answer in ${language === "sw" ? "natural, conversational Kiswahili used in Tanzania" : "natural, clear English"}. Use only the supplied verified evidence. Answer the topic directly and clearly, in a few short sentences. Do not invent facts, legal conclusions, constitutional articles, sections, helplines, contacts, or services. Distinguish Mainland Tanzania from Zanzibar. Do not diagnose, prescribe, blame, pressure disclosure/reporting, encourage confrontation, or claim to contact emergency services. Explain uncertainty or conflicting sources plainly. Keep the answer age-appropriate. Return only JSON matching the required schema.`,
+        // Never transmit the raw question. It may contain a child's name,
+        // contact details, health data, or sensitive case disclosure.
         input: JSON.stringify({
           topic: intent,
-          evidence: evidence.map(({ record, text }) => ({
+          evidence: verifiedEvidence.map(({ record, text }) => ({
             text: text.slice(0, 1800),
             source:
               record.source_title ||
@@ -843,28 +836,37 @@ export class AnswerGenerationService {
           })),
           safeguarding: safetyRules,
         }),
-        response_format: {
-          type: "text",
-          mime_type: "application/json",
-          schema: {
-            type: "object",
-            properties: {
-              directAnswer: { type: "string" },
-              explanation: { type: "string" },
-              guidance: { type: "string" },
+        text: {
+          format: {
+            type: "json_schema",
+            name: "salamaline_answer",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                directAnswer: { type: "string" },
+                explanation: { type: "string" },
+                guidance: { type: ["string", "null"] },
+              },
+              required: ["directAnswer", "explanation", "guidance"],
+              additionalProperties: false,
             },
-            required: ["directAnswer", "explanation"],
-            additionalProperties: false,
           },
         },
         store: false,
+        max_output_tokens: 500,
       });
       const content = response.output_text;
       if (!content) return null;
       const parsed = JSON.parse(content) as Record<string, unknown>;
       if (
         typeof parsed.directAnswer !== "string" ||
-        !parsed.directAnswer.trim()
+        !parsed.directAnswer.trim() ||
+        parsed.directAnswer.length > 600 ||
+        typeof parsed.explanation !== "string" ||
+        parsed.explanation.length > 1200 ||
+        (parsed.guidance !== null && typeof parsed.guidance !== "string") ||
+        (typeof parsed.guidance === "string" && parsed.guidance.length > 800)
       )
         return null;
       const outputText = [
@@ -884,21 +886,91 @@ export class AnswerGenerationService {
         ),
       );
       if (!provisionsAreGrounded) return null;
+      const moderation = await this.openai.moderations.create({
+        model: "omni-moderation-latest",
+        input: outputText,
+      });
+      if (moderation.results.some((result) => result.flagged)) return null;
       return {
         directAnswer: parsed.directAnswer.trim(),
-        explanation:
-          typeof parsed.explanation === "string"
-            ? parsed.explanation.trim()
-            : "",
-        guidance:
-          typeof parsed.guidance === "string"
-            ? parsed.guidance.trim()
-            : undefined,
+        explanation: parsed.explanation.trim(),
+        guidance: typeof parsed.guidance === "string" ? parsed.guidance.trim() : undefined,
       };
     } catch {
       // Provider failures silently fall back to the local, evidence-grounded answer.
       return null;
     }
+  }
+
+  private openAiIsAvailable(): boolean {
+    const enabled =
+      process.env.OPENAI_ENABLED === "true" &&
+      Boolean(process.env.OPENAI_API_KEY);
+    // Local development can exercise the provider with synthetic/general
+    // questions. Production stays off until the organization confirms the
+    // under-18 safeguards and eligibility.
+    return enabled &&
+      (process.env.NODE_ENV !== "production" ||
+        process.env.OPENAI_MINOR_SAFEGUARDS_CONFIRMED === "true");
+  }
+
+  private mustStayLocal(question: string, intent: string): boolean {
+    const providerEligibleIntents = new Set([
+      "education",
+      "disability_education",
+      "equality",
+      "constitution_rights",
+      "constitution_article_11",
+      "constitution_article_12",
+      "constitution_article_13",
+      "fgm",
+      "child_marriage",
+      "hitting_child",
+      "health_information",
+      "participation",
+    ]);
+    if (!providerEligibleIntents.has(intent) || this.isUrgent(question))
+      return true;
+
+    // Personal, case-specific, and symptom-specific requests stay local even
+    // when their topic is otherwise eligible for general educational answers.
+    const personalContext =
+      /\b(?:i|me|my|mine|we|us|our|my friend|my sister|my daughter|my child|my family|my partner|my husband|my wife|someone told me|she told me|he told me|nime|nina|kwangu|yangu|dada yangu|mtoto wangu|rafiki yangu|familia yangu)\b/i.test(
+        question,
+      );
+    const healthCase =
+      intent === "health_information" &&
+      /\b(?:symptom|diagnos|what illness|what disease|what condition|treat|treatment|medicine|medication|prescrib|dose|dozi|dalili|ugonjwa gani|nitumie dawa|tumia dawa)\b/i.test(
+        question,
+      );
+    const caseDisclosure =
+      /\b(?:being abused|was abused|was assaulted|being assaulted|was cut|going to be cut|being forced|was forced|threatened me|hit me|anapanga kumkata|anapanga kumkeketa|anampiga|amenipiga|ananipiga|amenitishia|ananitishia|kulazimishwa kuolewa|familia inanilazimisha)\b/i.test(
+        question,
+      ) ||
+      (/\b(?:child|children|girl|sister|daughter|woman|mtoto|watoto|msichana|dada|binti|mwanamke)\b/i.test(
+        question,
+      ) &&
+        /\b(?:is being|was|has been|will be|going to be|could be|plans? to|wants? to|forced|threaten\w*|hit|cut|marry|abuse|assault|harm|injure|anapanga|anataka|analazimishwa|atalazimishwa|anatishiwa|anapigwa|atakatwa|atakeketwa|kuolewa kwa lazima)\b/i.test(
+          question,
+        ));
+    return personalContext || healthCase || caseDisclosure;
+  }
+
+  private minimizeProviderQuery(question: string): string {
+    return question
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email removed]")
+      .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, "[number removed]")
+      .replace(
+        /\b(?:my name is|jina langu ni|ninaitwa)\s+[\p{L}'-]+(?:\s+[\p{L}'-]+){0,2}/giu,
+        "[name removed]",
+      )
+      .replace(
+        /\b(?:my|rafiki yangu|dada yangu|ndugu yangu|mtoto wangu|binti yangu)\s+([A-Z][\p{L}'-]+)\b/gu,
+        (_match, _name: string) => "[person removed]",
+      )
+      .replace(/\b(?:my address is|anwani yangu ni)\s+[^,.!?]+/giu, "[address removed]")
+      .replace(/[\u0000-\u001f\u007f]/g, " ")
+      .slice(0, 800);
   }
 
   private isUrgent(question: string): boolean {

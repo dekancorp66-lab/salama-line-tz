@@ -10,8 +10,8 @@ describe("SalamaLine AI bilingual quality matrix", () => {
   let retrieval: KnowledgeRetrievalService;
 
   beforeAll(() => {
-    process.env.GEMINI_ENABLED = "false";
-    process.env.GEMINI_MINOR_SAFEGUARDS_CONFIRMED = "false";
+    process.env.OPENAI_ENABLED = "false";
+    process.env.OPENAI_MINOR_SAFEGUARDS_CONFIRMED = "false";
     const loader = new KnowledgeLoaderService();
     loader.load();
     retrieval = new KnowledgeRetrievalService(loader);
@@ -24,9 +24,9 @@ describe("SalamaLine AI bilingual quality matrix", () => {
   });
 
   afterEach(() => {
-    process.env.GEMINI_ENABLED = "false";
-    process.env.GEMINI_MINOR_SAFEGUARDS_CONFIRMED = "false";
-    delete process.env.GEMINI_API_KEY;
+    process.env.OPENAI_ENABLED = "false";
+    process.env.OPENAI_MINOR_SAFEGUARDS_CONFIRMED = "false";
+    delete process.env.OPENAI_API_KEY;
   });
 
   it.each(AI_QA_CASES)("$id — $category", async (item) => {
@@ -164,10 +164,7 @@ describe("SalamaLine AI bilingual quality matrix", () => {
     }
   });
 
-  it("keeps sensitive and urgent cases local even if provider opt-in is set", async () => {
-    process.env.GEMINI_ENABLED = "true";
-    process.env.GEMINI_MINOR_SAFEGUARDS_CONFIRMED = "true";
-    process.env.GEMINI_API_KEY = "test-only-key";
+  it("keeps sensitive and urgent cases local", async () => {
     const cases = AI_QA_CASES.filter((item) =>
       ["sensitive_local", "urgent_local"].includes(item.expectation),
     );
