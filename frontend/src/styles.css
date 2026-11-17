@@ -1,50 +1,128 @@
 @import "tailwindcss";
 
+:root {
+  --brand-pink: #f03486;
+  --brand-pink-hover: #d52270;
+  --brand-pink-soft: #fff0f6;
+  --brand-pink-line: #f8c5dc;
+  --paper: #fffdfb;
+  --ink: #282328;
+  --muted: #6e6670;
+  --line: #ece4e7;
+  --wash: #f8f3f5;
+  --soft: #fcf8f9;
+  --inverse: #211c20;
+  --space-section: clamp(4rem, 8vw, 7rem);
+  --radius-card: 1.5rem;
+  --radius-panel: 1.875rem;
+  --shadow-soft: 0 12px 34px rgb(48 27 38 / 7%);
+  --shadow-panel: 0 22px 70px rgb(48 27 38 / 12%);
+  --focus-ring: 0 0 0 3px rgb(240 52 134 / 24%);
+}
+
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --color-paper: #ffffff;
-  --color-ink: #111111;
-  --color-muted: #6b6570;
-  --color-line: #efe6ea;
-  --color-wash: #fbf6f8;
-  --color-soft: #fff8fb;
-  --color-invert: #0a0a0a;
-  --color-pink: #f03486;
-  --color-orange: #ff7a18;
-  --color-blue: #2f6dff;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lora", Georgia, "Times New Roman", serif;
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-wash: var(--wash);
+  --color-soft: var(--soft);
+  --color-invert: var(--inverse);
+  --color-pink: var(--brand-pink);
+  --color-pink-hover: var(--brand-pink-hover);
+  --color-pink-soft: var(--brand-pink-soft);
+  --color-pink-line: var(--brand-pink-line);
   --radius-pill: 999px;
 }
 
 @layer base {
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--color-paper);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+    background: var(--paper);
   }
-  h1, h2, h3 { font-family: var(--font-display); }
-  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+
+  body {
+    min-width: 320px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-pink-hover);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--brand-pink-soft);
+    color: var(--ink);
+  }
 }
 
 .brand-text {
-  background-image: linear-gradient(100deg, var(--color-blue) 0%, var(--color-pink) 52%, var(--color-orange) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--brand-pink);
 }
 
 .brand-fill {
-  background-image: linear-gradient(100deg, var(--color-blue) 0%, var(--color-pink) 48%, var(--color-orange) 100%);
+  background-color: var(--brand-pink);
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
+
+.brand-fill:hover {
+  background-color: var(--brand-pink-hover);
+  box-shadow: 0 7px 18px rgb(143 32 76 / 20%);
+}
+
+.brand-fill:active {
+  transform: translateY(1px);
+}
+
+.section-space {
+  padding-block: var(--space-section);
+}
+
+.card-shadow {
+  box-shadow: var(--shadow-soft);
+}
+
 /* Logo marquee (see src/components/logo-marquee.tsx) */
 @keyframes marquee-scroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
+
 .marquee-track { animation: marquee-scroll 20s linear infinite; }
 .marquee:hover .marquee-track { animation-play-state: paused; }
+
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .marquee-track { animation: none; }
 }

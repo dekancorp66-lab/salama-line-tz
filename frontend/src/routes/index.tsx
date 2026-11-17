@@ -76,44 +76,45 @@ function Home() {
     <div className="min-h-screen bg-paper text-ink">
       <header className="fixed inset-x-0 top-3 z-40 px-3 md:top-4 md:px-5">
         <div className="mx-auto max-w-6xl">
-          <div className="flex h-14 items-center justify-between rounded-full border border-paper/15 bg-invert/45 pl-5 pr-2 text-paper shadow-lg backdrop-blur-xl md:h-16 md:pl-7">
-            <a href="#top" className="brand-text text-lg font-semibold tracking-tight">
+          <div className="flex min-h-14 items-center justify-between gap-3 rounded-full border border-line/80 bg-paper/95 pl-5 pr-2 text-ink shadow-[var(--shadow-soft)] backdrop-blur-xl md:min-h-16 md:pl-7">
+            <a href="#top" className="brand-text shrink-0 text-lg font-semibold tracking-tight md:text-xl">
               salamaline
             </a>
-            <nav className="hidden items-center gap-1 md:flex">
+            <nav aria-label="Main navigation" className="hidden items-center gap-1 md:flex">
               {nav.map((l) => (
                 <a
                   key={l.href}
                   href={l.href}
+                  aria-current={active === l.href ? "location" : undefined}
                   className={
-                    "rounded-full px-4 py-2 text-sm transition-colors " +
+                    "rounded-full px-3.5 py-2 text-sm font-medium text-pink transition-colors " +
                     (active === l.href
-                      ? "bg-paper font-medium text-ink"
-                      : "text-paper/80 hover:text-paper")
+                      ? "bg-pink font-semibold text-white"
+                      : "hover:bg-pink-soft")
                   }
                 >
                   {l.label}
                 </a>
               ))}
-              <a href="/ai" className="rounded-full bg-pink px-4 py-2 text-sm font-medium text-paper transition hover:bg-[#d92875]">
+              <a href="/ai" className="rounded-full px-3.5 py-2 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
                 AI Assistant
               </a>
             </nav>
             <div className="flex items-center gap-2">
               <a
                 href="#partner"
-                className="hidden rounded-full border border-paper/30 px-4 py-2 text-sm text-paper hover:bg-paper/10 lg:inline"
+                className="hidden rounded-full border border-line px-4 py-2 text-sm font-medium text-ink transition hover:border-pink-line hover:bg-pink-soft lg:inline"
               >
                 Partner
               </a>
               <a
                 href="#partner"
-                className="hidden rounded-full bg-pink px-4 py-2 text-sm font-medium text-paper sm:inline"
+                className="brand-fill hidden rounded-full px-4 py-2 text-sm font-semibold text-white sm:inline"
               >
                 Get involved
               </a>
               <button
-                className="grid h-10 w-10 place-items-center rounded-full bg-paper/15 ring-1 ring-paper/25 md:hidden"
+                className="grid h-10 w-10 place-items-center rounded-full bg-pink-soft text-pink ring-1 ring-pink-line transition hover:bg-pink hover:text-white md:hidden"
                 aria-label={open ? "Close menu" : "Open menu"}
                 onClick={() => setOpen((v) => !v)}
               >
@@ -122,24 +123,25 @@ function Home() {
             </div>
           </div>
           {open && (
-            <div className="mt-2 rounded-3xl border border-paper/15 bg-invert/80 px-5 py-3 text-paper shadow-lg backdrop-blur-xl md:hidden">
+            <div className="mt-2 rounded-3xl border border-line bg-paper p-3 text-ink shadow-[var(--shadow-panel)] md:hidden">
               {nav.map((l) => (
                 <a
                   key={l.href}
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className="block py-3 text-sm"
+                  aria-current={active === l.href ? "location" : undefined}
+                  className={`block rounded-2xl px-4 py-3 text-sm text-pink transition ${active === l.href ? "bg-pink font-semibold text-white" : "font-medium hover:bg-pink-soft"}`}
                 >
                   {l.label}
                 </a>
               ))}
-              <a href="/ai" onClick={() => setOpen(false)} className="my-2 block rounded-full bg-pink px-4 py-3 text-center text-sm font-medium text-paper">
+              <a href="/ai" onClick={() => setOpen(false)} className="my-2 block rounded-2xl px-4 py-3 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
                 SalamaLine AI Assistant
               </a>
               <a
                 href="#partner"
                 onClick={() => setOpen(false)}
-                className="mb-2 mt-2 block rounded-full bg-pink px-4 py-3 text-center text-sm font-medium text-paper"
+                className="mb-2 mt-2 block rounded-full border border-pink-line bg-pink-soft px-4 py-3 text-center text-sm font-semibold text-pink transition hover:bg-pink-line"
               >
                 Get involved
               </a>
@@ -161,25 +163,25 @@ function Home() {
             aria-hidden
             className="absolute inset-0 -z-10 h-full w-full object-cover object-[center_22%]"
           />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-invert/90 via-invert/40 to-invert/10 md:bg-gradient-to-r md:from-invert/85 md:via-invert/40 md:to-transparent" />
-          <div className="mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-4 pb-40 pt-28 md:justify-center md:px-6 md:pb-40 md:pt-16">
+          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-invert/90 via-invert/45 to-invert/15 md:bg-gradient-to-r md:from-invert/80 md:via-invert/35 md:to-transparent" />
+          <div className="mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-4 pb-44 pt-32 sm:px-6 md:justify-center md:pb-40 md:pt-20">
             <div className="max-w-xl">
-              <p className="mb-4 flex items-center gap-2 text-sm text-paper/90">
-                <Check size={16} /> Free · confidential · any phone
+              <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3.5 py-2 text-sm font-medium text-white/95 backdrop-blur-sm">
+                <Check size={16} className="text-white" /> Free · confidential · any phone
               </p>
-              <h1 className="text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
+              <h1 className="max-w-[12ch] text-5xl font-semibold leading-[1.04] tracking-tight text-white sm:text-6xl md:text-7xl">
                 Your new safety line
               </h1>
-              <p className="mt-4 max-w-md text-base text-paper/80 md:text-lg">
+              <p className="mt-5 max-w-lg text-base leading-relaxed text-white/90 md:text-lg">
                 Girls get accurate information, nearby verified services, and a trained person — from a basic phone. Free.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#how" className="rounded-full bg-paper px-5 py-3 text-sm font-medium text-ink">
+                <a href="#how" className="brand-fill inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">
                   See how it works
                 </a>
                 <a
                   href="#features"
-                  className="rounded-full bg-paper/15 px-5 py-3 text-sm font-medium text-paper ring-1 ring-paper/30 backdrop-blur"
+                  className="inline-flex min-h-12 items-center rounded-full border border-white/45 bg-black/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
                 >
                   What it covers
                 </a>
@@ -187,35 +189,35 @@ function Home() {
             </div>
           </div>
           <div className="absolute inset-x-0 bottom-0 pb-6 md:pb-8">
-            <p className="mb-3 text-center text-[11px] font-medium uppercase tracking-[0.2em] text-paper/60">
+            <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-paper/75 sm:text-[11px]">
               Organisations working to keep girls and women safe in Tanzania
             </p>
             <LogoMarquee />
           </div>
         </section>
 
-        <section aria-label="Who built SalamaLine" className="mx-auto max-w-6xl px-4 py-14 text-center md:px-6 md:py-20">
-          <p className="inline-flex items-center justify-center gap-2 text-sm font-medium text-ink md:text-base">
+        <section aria-label="Who built SalamaLine" className="mx-auto max-w-6xl px-4 py-12 text-center md:px-6 md:py-16">
+          <p className="mx-auto inline-flex max-w-3xl items-center justify-center gap-2 text-sm font-medium leading-relaxed text-ink md:text-base">
             <Shield size={18} className="text-pink" />
             Built in Mbeya, Tanzania, by signiAI at Mbeya University of Science and Technology
           </p>
         </section>
 
-        <section className="mx-auto grid max-w-6xl grid-cols-2 gap-px overflow-hidden border-b border-line px-4 py-10 md:grid-cols-4 md:px-6">
+        <section aria-label="SalamaLine at a glance" className="mx-auto grid max-w-6xl grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-panel)] border border-line bg-line px-4 py-3 shadow-sm md:grid-cols-4 md:px-6">
           {[
             ["Any phone", "USSD, SMS and WhatsApp"],
             ["No names stored", "Consent before any contact"],
             ["Human in the loop", "A trained responder, always"],
             ["Swahili first", "English from day one"],
           ].map(([k, v]) => (
-            <div key={k} className="px-2 py-4 md:px-6">
-              <p className="text-lg font-semibold tracking-tight">{k}</p>
+            <div key={k} className="bg-paper px-3 py-5 md:px-6 md:py-6">
+              <p className="text-lg font-semibold tracking-tight text-ink">{k}</p>
               <p className="mt-1 text-sm text-muted">{v}</p>
             </div>
           ))}
         </section>
 
-        <section id="how" className="scroll-mt-24 mx-auto max-w-6xl px-4 py-20 md:px-6">
+        <section id="how" className="section-space scroll-mt-24 mx-auto max-w-6xl px-4 md:px-6">
           <p className="text-sm font-medium text-pink">How it works</p>
           <h2 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-5xl">
             It starts with a short code, then a real person.
@@ -227,17 +229,17 @@ function Home() {
               ["3", "Nearby services", "Verified clinics, legal aid and social welfare offices by district, sent by SMS."],
               ["4", "Help, with consent", "A trained responder is alerted. If nobody replies, the alert repeats, then escalates."],
             ].map(([n, t, d]) => (
-              <article key={n} className="rounded-3xl bg-wash p-6">
-                <p className="text-sm font-medium text-pink">{n}</p>
-                <h3 className="mt-6 text-xl font-semibold tracking-tight">{t}</h3>
+              <article key={n} className="rounded-[var(--radius-card)] border border-line bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]">
+                <p className="inline-grid h-8 w-8 place-items-center rounded-full bg-pink-soft text-sm font-semibold text-pink">{n}</p>
+                <h3 className="mt-6 text-xl font-semibold leading-snug tracking-tight">{t}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">{d}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="features" className="scroll-mt-24 bg-soft">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 md:grid-cols-2 md:px-6">
+        <section id="features" className="scroll-mt-24 border-y border-line bg-soft">
+          <div className="section-space mx-auto grid max-w-6xl items-center gap-10 px-4 md:grid-cols-2 md:px-6">
             <div>
               <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">
                 Reach girls that apps miss
@@ -264,7 +266,7 @@ function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-20 md:px-6">
+        <section className="section-space mx-auto max-w-6xl px-4 md:px-6">
           <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-5xl">
             Information, referral and a person — in one flow
           </h2>
@@ -277,8 +279,8 @@ function Home() {
               [Lock, "Privacy controls", "Quick exit, delete-my-data, neutral wording so a phone screen reveals nothing."],
               [Smartphone, "Wellbeing", "A gentle check-in. Tips if she is okay. A counsellor if she agrees. Nothing she answers is stored."],
             ].map(([Icon, t, d]) => (
-              <article key={t as string} className="rounded-3xl border border-line p-6">
-                <Icon size={20} className="text-pink" />
+              <article key={t as string} className="rounded-[var(--radius-card)] border border-line bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]">
+                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-pink-soft text-pink"><Icon size={20} /></span>
                 <h3 className="mt-8 text-lg font-semibold">{t as string}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">{d as string}</p>
               </article>
@@ -288,7 +290,7 @@ function Home() {
 
         <section id="safety" className="scroll-mt-24 bg-invert text-paper">
           <div className="mx-auto max-w-6xl px-4 py-20 md:px-6">
-            <p className="text-sm font-medium text-orange">Safety, privacy and ethics</p>
+            <p className="text-sm font-semibold text-pink-line">Safety, privacy and ethics</p>
             <h2 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-5xl">
               Designed so she can trust it
             </h2>
@@ -310,7 +312,7 @@ function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-20 md:px-6">
+        <section className="section-space mx-auto max-w-6xl px-4 md:px-6">
           <p className="text-sm text-muted">What using it feels like</p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {[
@@ -318,7 +320,7 @@ function Home() {
               ["A teacher", "She texts RIPOTI and the district. A responder is alerted with no information about who sent it, then verifies the concern through the community protocol."],
               ["A responder", "She replies ACK with the case code, confirms it is safe to talk, and does not contact the family without a safety plan. CLOSE wipes the girl’s details."],
             ].map(([t, d]) => (
-              <article key={t} className="rounded-3xl bg-wash p-6">
+              <article key={t} className="rounded-[var(--radius-card)] border border-line bg-wash p-6">
                 <h3 className="text-lg font-semibold">{t}</h3>
                 <p className="mt-3 text-sm leading-relaxed text-muted">{d}</p>
               </article>
@@ -334,21 +336,21 @@ function Home() {
               ["230M", "women left offline by the mobile gender gap"],
             ].map(([n, l]) => (
               <div key={n}>
-                <p className="brand-text text-5xl font-semibold tracking-tight">{n}</p>
+                <p className="brand-text text-5xl font-semibold tracking-tight md:text-6xl">{n}</p>
                 <p className="mt-2 text-sm text-muted">{l}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section id="partner" className="scroll-mt-24 mx-auto max-w-6xl px-4 py-20 md:px-6">
-          <div className="grid items-start gap-10 rounded-[28px] bg-wash p-6 md:grid-cols-2 md:p-12">
+        <section id="partner" className="section-space scroll-mt-24 mx-auto max-w-6xl px-4 md:px-6">
+          <div className="grid items-start gap-10 rounded-[var(--radius-panel)] border border-line bg-wash p-6 shadow-sm md:grid-cols-2 md:p-12">
             <div>
               <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">Free for every girl</h2>
               <p className="mt-4 text-muted">
                 Built by signiAI at Mbeya University of Science and Technology, led by Jofrey Nasson. The platform handles USSD, SMS and WhatsApp, referrals, consent-based help requests, FGM, wellbeing, escalation and a partner dashboard. Content and service listings are placeholders until professionals and partners approve them.
               </p>
-              <a href="mailto:hello@salamaline.org" className="brand-fill mt-8 inline-flex rounded-full px-5 py-3 text-sm font-medium text-paper">
+              <a href="mailto:hello@salamaline.org" className="brand-fill mt-8 inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">
                 Become a partner
               </a>
             </div>
@@ -379,12 +381,12 @@ function Home() {
               return (
                 <div key={item.q}>
                   <button
-                    className="flex w-full items-center justify-between gap-4 py-5 text-left text-base font-medium"
+                    className="flex w-full items-center justify-between gap-4 py-5 text-left text-base font-medium transition-colors hover:text-pink"
                     aria-expanded={on}
                     onClick={() => setFaq(on ? null : i)}
                   >
                     {item.q}
-                    <ChevronDown size={18} className={on ? "rotate-180" : ""} />
+                    <ChevronDown size={18} className={`shrink-0 transition-transform ${on ? "rotate-180 text-pink" : "text-muted"}`} />
                   </button>
                   {on && <p className="pb-5 text-sm leading-relaxed text-muted">{item.a}</p>}
                 </div>

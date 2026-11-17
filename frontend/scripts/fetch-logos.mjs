@@ -20,7 +20,7 @@ export const sites = [
   { file: "tawla", url: "https://tawla.or.tz" },
   { file: "tamwa", url: "https://tamwa.org" },
   { file: "wlac", url: "https://wlac.or.tz" },
-  { file: "msichana", url: "https://msichanainitiative.org" },
+  { file: "msichana", url: "https://msichana.or.tz" },
   { file: "tgnp", url: "https://tgnp.org" },
   { file: "kivulini", url: "https://kivulini.or.tz" },
   { file: "cdf", url: "https://cdftz.org" },

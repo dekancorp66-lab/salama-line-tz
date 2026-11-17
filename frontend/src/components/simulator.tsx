@@ -83,7 +83,7 @@ export function Simulator() {
         <div role="tablist" className="flex gap-1 rounded-full bg-paper/10 p-1 text-xs">
           {TABS.map((t) => (
             <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-              className={`flex-1 rounded-full px-2 py-1.5 font-medium ${tab === t.id ? "bg-paper text-ink" : "text-paper/70"}`}>
+              className={`min-h-9 flex-1 rounded-full px-2 py-1.5 font-medium transition ${tab === t.id ? "bg-pink text-white" : "text-paper/70 hover:bg-paper/10 hover:text-white"}`}>
               {t.label}
             </button>
           ))}
@@ -138,7 +138,7 @@ export function Simulator() {
           </span>
           <button onClick={reset} className="underline">Reset</button>
         </div>
-        {err && <p role="alert" className="mt-2 text-xs text-orange">{err}</p>}
+        {err && <p role="alert" className="mt-2 rounded-xl bg-pink/15 px-3 py-2 text-xs text-pink-line">{err}</p>}
       </div>
     </div>
   );
