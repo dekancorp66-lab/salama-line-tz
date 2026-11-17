@@ -96,6 +96,12 @@ function Home() {
                   {l.label}
                 </a>
               ))}
+              <a href="/help" className="rounded-full px-3.5 py-2 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
+                Get help
+              </a>
+              <a href="/officers" className="rounded-full px-3.5 py-2 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
+                Officers
+              </a>
               <a href="/ai" className="rounded-full px-3.5 py-2 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
                 AI Assistant
               </a>
@@ -135,6 +141,12 @@ function Home() {
                   {l.label}
                 </a>
               ))}
+              <a href="/help" onClick={() => setOpen(false)} className="my-2 block rounded-2xl px-4 py-3 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
+                Get help privately
+              </a>
+              <a href="/officers" onClick={() => setOpen(false)} className="my-2 block rounded-2xl px-4 py-3 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
+                Officer workspace
+              </a>
               <a href="/ai" onClick={() => setOpen(false)} className="my-2 block rounded-2xl px-4 py-3 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
                 SalamaLine AI Assistant
               </a>
@@ -176,14 +188,14 @@ function Home() {
                 Girls get accurate information, nearby verified services, and a trained person — from a basic phone. Free.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#how" className="brand-fill inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">
-                  See how it works
+                <a href="/help" className="brand-fill inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">
+                  Ask for help privately
                 </a>
                 <a
-                  href="#features"
+                  href="#how"
                   className="inline-flex min-h-12 items-center rounded-full border border-white/45 bg-black/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
                 >
-                  What it covers
+                  See how it works
                 </a>
               </div>
             </div>
@@ -370,6 +382,17 @@ function Home() {
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 pb-8 md:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-5 rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-sm md:p-8">
+            <div className="max-w-xl">
+              <p className="text-sm font-medium text-pink">For the people who answer</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">A workspace for trained officers</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">Responders review district cases, record redacted notes and consent decisions, and escalate for human review. Administrators manage staff, verified services and approved information.</p>
+            </div>
+            <a href="/officers" className="brand-fill inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">Open officer workspace</a>
           </div>
         </section>
 

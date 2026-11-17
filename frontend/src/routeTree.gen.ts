@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as OfficersRouteImport } from './routes/officers'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiSimulateRouteImport } from './routes/api/simulate'
 import { Route as ApiSmsRouteImport } from './routes/api/sms'
@@ -34,6 +36,16 @@ const AiRoute = AiRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfficersRoute = OfficersRouteImport.update({
+  id: '/officers',
+  path: '/officers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -81,6 +93,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
+  '/help': typeof HelpRoute
+  '/officers': typeof OfficersRoute
   '/api/health': typeof ApiHealthRoute
   '/api/simulate': typeof ApiSimulateRoute
   '/api/sms': typeof ApiSmsRoute
@@ -94,6 +108,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
+  '/help': typeof HelpRoute
+  '/officers': typeof OfficersRoute
   '/api/health': typeof ApiHealthRoute
   '/api/simulate': typeof ApiSimulateRoute
   '/api/sms': typeof ApiSmsRoute
@@ -108,6 +124,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
+  '/help': typeof HelpRoute
+  '/officers': typeof OfficersRoute
   '/api/health': typeof ApiHealthRoute
   '/api/simulate': typeof ApiSimulateRoute
   '/api/sms': typeof ApiSmsRoute
@@ -123,6 +141,8 @@ export interface FileRouteTypes {
     | '/'
     | '/ai'
     | '/dashboard'
+    | '/help'
+    | '/officers'
     | '/api/health'
     | '/api/simulate'
     | '/api/sms'
@@ -136,6 +156,8 @@ export interface FileRouteTypes {
     | '/'
     | '/ai'
     | '/dashboard'
+    | '/help'
+    | '/officers'
     | '/api/health'
     | '/api/simulate'
     | '/api/sms'
@@ -149,6 +171,8 @@ export interface FileRouteTypes {
     | '/'
     | '/ai'
     | '/dashboard'
+    | '/help'
+    | '/officers'
     | '/api/health'
     | '/api/simulate'
     | '/api/sms'
@@ -163,6 +187,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AiRoute: typeof AiRoute
   DashboardRoute: typeof DashboardRoute
+  HelpRoute: typeof HelpRoute
+  OfficersRoute: typeof OfficersRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiSimulateRoute: typeof ApiSimulateRoute
   ApiSmsRoute: typeof ApiSmsRoute
@@ -194,6 +220,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/officers': {
+      id: '/officers'
+      path: '/officers'
+      fullPath: '/officers'
+      preLoaderRoute: typeof OfficersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -259,6 +299,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiRoute: AiRoute,
   DashboardRoute: DashboardRoute,
+  HelpRoute: HelpRoute,
+  OfficersRoute: OfficersRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiSimulateRoute: ApiSimulateRoute,
   ApiSmsRoute: ApiSmsRoute,

@@ -23,7 +23,7 @@ async function main() {
   if (existing) {
     await prisma.user.update({
       where: { email },
-      data: { passwordHash, role: UserRole.ADMIN, isActive: true },
+      data: { passwordHash, role: UserRole.SUPER_ADMIN, isActive: true, tokenVersion: { increment: 1 } },
     });
     console.log('Super administrator access enabled and password updated for the configured account.');
     return;
@@ -33,7 +33,7 @@ async function main() {
       email,
       passwordHash,
       displayName: 'SalamaLine Super Administrator',
-      role: UserRole.ADMIN,
+      role: UserRole.SUPER_ADMIN,
       isActive: true,
     },
   });

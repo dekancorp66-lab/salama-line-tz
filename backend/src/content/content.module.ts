@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../common/roles.guard';
 import { ContentController } from './content.controller';
 import { ContentService } from './content.service';
-import { RolesGuard } from '../common/roles.guard';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@Module({ imports: [AuthModule], controllers: [ContentController], providers: [ContentService, RolesGuard, JwtAuthGuard] })
+@Module({
+  imports: [AuthModule, AuditModule],
+  controllers: [ContentController],
+  providers: [ContentService, RolesGuard, JwtAuthGuard],
+})
 export class ContentModule {}

@@ -93,7 +93,7 @@ describe("SalamaLine AI grounded answers", () => {
 
     const english = await service.ask("Who are you?", "en");
     expect(english.status).toBe("answered");
-    expect(english.directAnswer).toMatch(/I'm SalamaLine’s assistant/);
+    expect(english.directAnswer).toMatch(/I’m SalamaLine’s assistant/);
   });
 
   it("answers a relevant education question phrased as a real-world situation", async () => {

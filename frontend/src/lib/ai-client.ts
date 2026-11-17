@@ -1,3 +1,5 @@
+import { resolveApiBase } from "./api-base";
+
 export type AiLanguage = "sw" | "en";
 
 export interface AiSource {
@@ -35,11 +37,13 @@ export interface AiHealth {
   knowledgeBase?: { loaded: boolean; records: number };
 }
 
-const configuredBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
-// Local development uses the Nest server; production defaults to same-origin so
-// browsers never try to reach their own localhost. Deployments can override it.
-const defaultBase = import.meta.env.DEV ? "http://localhost:3000/api/v1" : "/api/v1";
-const API_BASE = (configuredBase || defaultBase).replace(/\/+$/, "");
+// Use the same production-safe resolver as the rest of the Nest-backed screens:
+// a developer localhost must never be baked into a deployed bundle, where it
+// would point at the visitor's own machine.
+const API_BASE = resolveApiBase(
+  import.meta.env.VITE_API_BASE_URL as string | undefined,
+  import.meta.env.DEV,
+);
 const REQUEST_TIMEOUT_MS = 15_000;
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {

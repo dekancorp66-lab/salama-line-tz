@@ -3,6 +3,7 @@ import { INestApplication, UnauthorizedException, ValidationPipe } from '@nestjs
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import request = require('supertest');
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { JwtStrategy } from '../auth/jwt.strategy';
@@ -10,11 +11,13 @@ import { AdminController } from './admin.controller';
 
 describe('AdminController user access', () => {
   let app: INestApplication;
+  const auditMock = { record: jest.fn().mockResolvedValue(undefined) };
   const prismaMock = {
     user: {
       findUnique: jest.fn().mockResolvedValue({
         email: 'responder@example.org',
         role: UserRole.RESPONDER,
+        isActive: true,
       }),
       update: jest.fn().mockResolvedValue({
         id: 'user-1',
@@ -46,6 +49,7 @@ describe('AdminController user access', () => {
         JwtAuthGuard,
         { provide: PrismaService, useValue: prismaMock },
         { provide: JwtStrategy, useValue: strategyMock },
+        { provide: AuditService, useValue: auditMock },
       ],
     }).compile();
     app = moduleRef.createNestApplication();
@@ -63,12 +67,12 @@ describe('AdminController user access', () => {
   });
 
   beforeEach(() => {
-    prismaMock.user.findUnique.mockClear();
+    jest.clearAllMocks();
     prismaMock.user.findUnique.mockResolvedValue({
       email: 'responder@example.org',
       role: UserRole.RESPONDER,
+      isActive: true,
     });
-    prismaMock.user.update.mockClear();
   });
 
   it('rejects requests without an authenticated user', async () => {
@@ -107,6 +111,10 @@ describe('AdminController user access', () => {
       where: { id: 'user-1' },
       data: { isActive: true },
     }));
+    expect(auditMock.record).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'ADMIN_USER_ACCESS_UPDATED',
+      outcome: 'success',
+    }));
   });
 
   it('allows only the super administrator to grant administrator access', async () => {
@@ -123,14 +131,15 @@ describe('AdminController user access', () => {
       .send({ isActive: true, role: UserRole.ADMIN })
       .expect(200);
     expect(prismaMock.user.update).toHaveBeenCalledWith(expect.objectContaining({
-      data: { isActive: true, role: UserRole.ADMIN },
+      data: { isActive: true, role: UserRole.ADMIN, tokenVersion: { increment: 1 } },
     }));
   });
 
   it('prevents other administrators from changing administrator accounts', async () => {
     prismaMock.user.findUnique.mockResolvedValueOnce({
       email: 'wilbardmagaso777@gmail.com',
-      role: UserRole.ADMIN,
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
     });
 
     await request(app.getHttpServer())
@@ -144,7 +153,8 @@ describe('AdminController user access', () => {
   it('prevents the super administrator from deactivating or downgrading its own account', async () => {
     prismaMock.user.findUnique.mockResolvedValueOnce({
       email: 'wilbardmagaso777@gmail.com',
-      role: UserRole.ADMIN,
+      role: UserRole.SUPER_ADMIN,
+      isActive: true,
     });
 
     await request(app.getHttpServer())

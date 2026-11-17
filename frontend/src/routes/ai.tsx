@@ -103,9 +103,12 @@ function AiAssistant() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
           <a href="/" className="flex items-center gap-2 text-sm font-medium text-muted hover:text-ink"><ArrowLeft size={17} /> <span className="hidden sm:inline">{t.back}</span><span className="sm:hidden">SalamaLine</span></a>
           <a href="/" className="brand-text text-lg font-semibold tracking-tight md:text-xl">salamaline</a>
-          <div className="flex items-center gap-2" aria-label="Language">
-            <button onClick={() => setLanguage("sw")} aria-pressed={language === "sw"} className={`min-h-10 rounded-full px-3.5 py-2 text-sm transition ${language === "sw" ? "bg-pink text-white" : "text-muted hover:bg-pink-soft hover:text-pink"}`}>SW</button>
-            <button onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`min-h-10 rounded-full px-3.5 py-2 text-sm transition ${language === "en" ? "bg-pink text-white" : "text-muted hover:bg-pink-soft hover:text-pink"}`}>EN</button>
+          <div className="flex items-center gap-2">
+            <a href="/help" className="hidden min-h-10 items-center rounded-full border border-pink-line px-3.5 py-2 text-xs font-semibold text-pink transition hover:bg-pink-soft sm:inline-flex">{language === "sw" ? "Omba msaada" : "Ask for help"}</a>
+            <div className="flex items-center gap-2" aria-label="Language">
+              <button onClick={() => setLanguage("sw")} aria-pressed={language === "sw"} className={`min-h-10 rounded-full px-3.5 py-2 text-sm transition ${language === "sw" ? "bg-pink text-white" : "text-muted hover:bg-pink-soft hover:text-pink"}`}>SW</button>
+              <button onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`min-h-10 rounded-full px-3.5 py-2 text-sm transition ${language === "en" ? "bg-pink text-white" : "text-muted hover:bg-pink-soft hover:text-pink"}`}>EN</button>
+            </div>
           </div>
         </div>
       </header>
@@ -125,6 +128,7 @@ function AiAssistant() {
             <div className="mb-2 flex items-center gap-2 font-semibold text-pink"><CircleAlert size={17} />{language === "sw" ? "Msaada wa dharura" : "Emergency guidance"}</div>
             {t.emergency}
           </div>
+          <a href="/help" className="block rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-4 text-sm font-semibold text-pink transition hover:bg-pink-line">{language === "sw" ? "Zungumza na mtu aliyefunzwa →" : "Talk to a trained person →"}</a>
           <div className="flex items-center gap-2 px-1 text-xs text-muted" aria-live="polite">
             {health === "ready" ? <Wifi size={15} className="text-pink" /> : health === "checking" ? <LoaderCircle size={15} className="animate-spin text-pink" /> : <WifiOff size={15} className="text-pink" />}
             <span>{health === "ready" ? t.ready : health === "checking" ? t.checking : t.unavailable}</span>
