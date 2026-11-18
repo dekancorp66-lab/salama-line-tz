@@ -28,4 +28,14 @@ export class UpdateUserAccessDto {
   @IsString()
   @MaxLength(20)
   districtCode?: string;
+
+  @ApiPropertyOptional({
+    example: 'inst-123',
+    maxLength: 64,
+    description: 'Institution scope. Only a Super Admin may set this. Empty string clears it.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  institutionId?: string;
 }

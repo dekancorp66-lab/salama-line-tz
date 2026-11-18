@@ -1,299 +1,604 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
-import { ArrowLeft, Check, CircleAlert, Heart, Lock, Send, Shield, Users } from "lucide-react";
-import { ApiError } from "@/lib/api-client";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useMemo, useState, type FormEvent } from "react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Heart,
+  LocateFixed,
+  Lock,
+  MapPin,
+  Search,
+  Send,
+  Shield,
+  Users,
+} from "lucide-react";
+import { PublicHeader } from "@/components/public-header.tsx";
+import { en } from "@/i18n/en.ts";
+import { useI18n, usePageMeta } from "@/i18n/provider.tsx";
+import type { TranslationKey } from "@/i18n/types.ts";
 import { submitHelpRequest, type HelpRequestReceipt } from "@/lib/backend-api";
+import {
+  TANZANIA_MAINLAND_REGIONS,
+  findRegionById,
+  type TanzaniaDistrict,
+  type TanzaniaRegion,
+} from "@/salama/data/tanzania-mainland-locations";
 
 export const Route = createFileRoute("/help")({
-  head: () => ({
-    meta: [
-      { title: "Ask for help · SalamaLine" },
-      { name: "robots", content: "noindex" },
-      { name: "description", content: "Privately ask SalamaLine for help. A trained responder reviews every request." },
-    ],
-  }),
-  component: GetHelp,
+  component: () => <Navigate to="/report" replace />,
 });
 
-type Lang = "sw" | "en";
+type FormError =
+  | { kind: "key"; key: TranslationKey }
+  | { kind: "api"; cause: unknown };
 
-const topics = [
-  { value: "CHILD_MARRIAGE", sw: "Ndoa ya mtoto", en: "Child marriage" },
-  { value: "FGM", sw: "Kuukatwa", en: "FGM" },
-  { value: "DIGITAL_SAFETY", sw: "Usalama mtandaoni", en: "Digital safety" },
-  { value: "WELLBEING", sw: "Afya ya akili", en: "Wellbeing" },
-  { value: "OTHER", sw: "Kitu kingine", en: "Something else" },
-] as const;
+type Step = "location" | "details";
+type LocationMethod = "manual" | "gps";
+type GpsStatus =
+  | "idle"
+  | "detecting"
+  | "detected"
+  | "needs_review"
+  | "denied"
+  | "unavailable"
+  | "failed";
 
-const districts = ["MBEYA", "KYELA", "MWANZA", "RUNGWE", "BUSOKELO", "MAKETE", "ISANGA", "MPANGA"];
+const topics = ["CHILD_MARRIAGE", "FGM", "DIGITAL_SAFETY", "WELLBEING", "OTHER"] as const;
 
-const copy = {
-  sw: {
-    back: "Rudi SalamaLine",
-    title: "Omba msaada",
-    intro: "Tuma ujumbe mfupi. Mtu aliyefunzwa atakagua ombi lako — hakuna ujumbe otomatiki kwa polisi au familia.",
-    form: "Ombi lako",
-    topic: "Unahitaji msaada gani?",
-    topicHint: "Chagua kategoria inayokaribia sana.",
-    district: "Wilaya yako",
-    districtOther: "Wilaya nyingine",
-    districtHint: "Huongezwi kwenye ujumbe unaotumwa kwa mtu yeyote.",
-    concern: "Muhtasari mfupi (si lazima)",
-    concernHint: "Usiandike jina, namba ya simu, anwani au majina ya watu. Taarifa zinazotambulisha zitafutwa kabla ya kuhifadhiwa.",
-    concernPlaceholder: "Kwa mfano: Niko salama kwa sasa lakini naogopa kwamba…",
-    anonymous: "Ripoti bila kujitambulisha",
-    anonymousHint: "Hakutakuwa na namba wala taarifa za mawasiliano zilizohifadhiwa.",
-    consent: "Nakubali mtu aliyefunzwa aniwasiliane kuhusu ombi hili",
-    consentHint: "Kukataa hakuzuii msaada wala taarifa. Kibali hiki ni maalum, kina toleo na kinaweza kutenguliwa.",
-    contact: "Namba au barua pepe (kwa mawasiliano tu)",
-    contactHint: "Inahifadhiwa kama alama (hash) pekee; haitumwi kutuma ujumbe otomatiki.",
-    priority: "Kipaumbele",
-    normal: "Kawaida",
-    urgent: "Haraka",
-    urgencyNote: "Haraka inamaanisha mtu atakagua mapema. System haiwasiliani na huduma za dharura yenyewe.",
-    submit: "Tuma ombi",
-    sending: "Inatuma…",
-    privacyTitle: "Faragha yako",
-    privacy1: "Hakuna majina au maandishi yako ghafi yanayohifadhiwa.",
-    privacy2: "Mtu yeyote anayekusaidia ni mwanadamu aliyefunzwa, si robot.",
-    privacy3: "Hakuna mawasiliano ya moja kwa moja na familia, polisi au mamlaka.",
-    privacy4: "Kibali ni chaguo, kimeainishwa na kinaweza kutenguliwa wakati wowote.",
-    safetyTitle: "Ikiwa uko kwenye hatari ya sasa",
-    safety: "Tafuta sehemu salama ikiwezekana na wasiliana na huduma za dharura za eneo lako au mtu mzima unayemwamini. SalamaLine haiwezi kuziwasiliana kwa niaba yako.",
-    received: "Ombi limepokelewa",
-    code: "Namba ya ombi lako",
-    codeHint: "Hifadhi namba hii. Mtu aliyefunzwa ataitumia kukusaidia bila kufichua utambulisho wako.",
-    saved: "Ombi lako limehifadhiwa kwa njia ndogo tu. Hakuna mtu aliyejaribiwa kuwasiliana bila kibali chako.",
-    another: "Tuma ombi jingine",
-    backHome: "Rudi nyumbani",
-    errors: {
-      topic: "Chagua aina ya msaada.",
-      district: "Andika wilaya halali (herufi 2–20).",
-      contact: "Andika namba au barua pepe unayokubali kutumiwa.",
-      both: "Huwezi kutuma ripoti isiyojitambulisha pamoja na maelezo ya mawasiliano.",
-    },
-  },
-  en: {
-    back: "Back to SalamaLine",
-    title: "Ask for help",
-    intro: "Send a short request. A trained person reviews it — nothing is sent automatically to police or family.",
-    form: "Your request",
-    topic: "What kind of help do you need?",
-    topicHint: "Choose the closest category.",
-    district: "Your district",
-    districtOther: "Other district",
-    districtHint: "This is never shared in a message to anyone.",
-    concern: "Short summary (optional)",
-    concernHint: "Do not include your name, phone number, address or anyone's identifying details. Identifying details are removed before storage.",
-    concernPlaceholder: "For example: I am safe right now but I am worried that…",
-    anonymous: "Report without identifying myself",
-    anonymousHint: "No phone number or contact details will be stored.",
-    consent: "I agree that a trained responder may contact me about this request",
-    consentHint: "Declining never blocks help or information. This consent is specific, versioned and can be withdrawn.",
-    contact: "Phone or email (for contact only)",
-    contactHint: "Stored only as a one-way hash; no automated messages are sent.",
-    priority: "Priority",
-    normal: "Normal",
-    urgent: "Urgent",
-    urgencyNote: "Urgent means a person reviews it sooner. The system does not contact emergency services itself.",
-    submit: "Send request",
-    sending: "Sending…",
-    privacyTitle: "Your privacy",
-    privacy1: "No names or raw message text are stored.",
-    privacy2: "A trained human, not a robot, is behind every response.",
-    privacy3: "No automatic contact with family, police or authorities.",
-    privacy4: "Consent is optional, specific, versioned and revocable.",
-    safetyTitle: "If you are in immediate danger",
-    safety: "Move somewhere safer if you can, and contact local emergency services or a trusted adult. SalamaLine cannot contact them for you.",
-    received: "Request received",
-    code: "Your case code",
-    codeHint: "Keep this code. A trained responder uses it to help you without exposing your identity.",
-    saved: "Only the minimum details were saved. Nobody is contacted unless you explicitly agree.",
-    another: "Send another request",
-    backHome: "Back to home",
-    errors: {
-      topic: "Choose the kind of help you need.",
-      district: "Enter a valid district (2–20 characters).",
-      contact: "Enter a phone number or email you agree to be used.",
-      both: "An anonymous report cannot include contact details.",
-    },
-  },
-} as const;
+function normalizeName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['’`]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
 
-function GetHelp() {
-  const [lang, setLang] = useState<Lang>("sw");
+function pickRegionFromAddress(address: Record<string, string | undefined>): TanzaniaRegion | undefined {
+  const candidates = [address.state, address.region, address.county, address.state_district]
+    .filter((v): v is string => Boolean(v))
+    .map(normalizeName);
+  for (const candidate of candidates) {
+    const region = TANZANIA_MAINLAND_REGIONS.find((r) => {
+      const n = normalizeName(r.name);
+      return n === candidate || candidate.includes(n) || n.includes(candidate);
+    });
+    if (region) return region;
+  }
+  return undefined;
+}
+
+function pickDistrictFromAddress(
+  region: TanzaniaRegion,
+  address: Record<string, string | undefined>,
+): TanzaniaDistrict | undefined {
+  const candidates = [
+    address.city_district,
+    address.district,
+    address.municipality,
+    address.town,
+    address.city,
+    address.county,
+    address.suburb,
+  ]
+    .filter((v): v is string => Boolean(v))
+    .map(normalizeName);
+  for (const candidate of candidates) {
+    const matches = region.districts.filter((d) => {
+      const n = normalizeName(d.name);
+      return n === candidate || candidate.includes(n) || n.includes(candidate);
+    });
+    if (matches.length === 1) return matches[0];
+  }
+  return undefined;
+}
+
+function SearchableOptionList(props: {
+  id: string;
+  label: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  query: string;
+  onQueryChange: (value: string) => void;
+  options: { id: string; name: string }[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  disabled?: boolean;
+  disabledHint?: string;
+}) {
+  const {
+    id,
+    label,
+    searchLabel,
+    searchPlaceholder,
+    query,
+    onQueryChange,
+    options,
+    selectedId,
+    onSelect,
+    disabled,
+    disabledHint,
+  } = props;
+  return (
+    <div className="space-y-2">
+      <label htmlFor={`${id}-search`} className="block text-sm font-semibold">
+        {label}
+      </label>
+      <input
+        id={`${id}-search`}
+        type="search"
+        value={query}
+        onChange={(e) => onQueryChange(e.target.value)}
+        disabled={disabled}
+        placeholder={searchPlaceholder}
+        aria-label={searchLabel}
+        className="min-h-11 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink disabled:cursor-not-allowed disabled:opacity-50"
+      />
+      {disabled ? (
+        <p className="rounded-xl border border-line bg-soft px-3 py-3 text-sm text-muted">{disabledHint}</p>
+      ) : (
+        <div
+          role="listbox"
+          aria-label={label}
+          className="max-h-56 overflow-y-auto rounded-xl border border-line bg-paper p-1"
+        >
+          {options.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-muted">—</p>
+          ) : (
+            options.map((option) => {
+              const selected = option.id === selectedId;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => onSelect(option.id)}
+                  className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition ${
+                    selected
+                      ? "bg-pink-soft font-semibold text-pink"
+                      : "text-ink hover:bg-soft"
+                  }`}
+                >
+                  <span>{option.name}</span>
+                  {selected ? <Check size={16} className="shrink-0" /> : null}
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function GetHelpForm({ current = "/report" }: { current?: string }) {
+  const { t, errorMessage } = useI18n();
+  usePageMeta("help");
+  const [step, setStep] = useState<Step>("location");
+  const [locationMethod, setLocationMethod] = useState<LocationMethod>("manual");
+  const [regionId, setRegionId] = useState("");
+  const [districtId, setDistrictId] = useState("");
+  const [regionQuery, setRegionQuery] = useState("");
+  const [districtQuery, setDistrictQuery] = useState("");
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>("idle");
+  const [gpsMessageKey, setGpsMessageKey] = useState<TranslationKey | null>(null);
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [includeCoords, setIncludeCoords] = useState(false);
+
   const [topic, setTopic] = useState<string>("");
-  const [district, setDistrict] = useState("MBEYA");
-  const [otherDistrict, setOtherDistrict] = useState("");
   const [concern, setConcern] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [consent, setConsent] = useState(false);
   const [contact, setContact] = useState("");
   const [priority, setPriority] = useState<"NORMAL" | "URGENT">("NORMAL");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<FormError | null>(null);
   const [receipt, setReceipt] = useState<HelpRequestReceipt | null>(null);
-  const t = copy[lang];
+
+  const selectedRegion = useMemo(() => findRegionById(regionId), [regionId]);
+  const selectedDistrict = useMemo(
+    () => selectedRegion?.districts.find((d) => d.id === districtId),
+    [selectedRegion, districtId],
+  );
+
+  const filteredRegions = useMemo(() => {
+    const q = normalizeName(regionQuery);
+    if (!q) return TANZANIA_MAINLAND_REGIONS;
+    return TANZANIA_MAINLAND_REGIONS.filter((r) => normalizeName(r.name).includes(q));
+  }, [regionQuery]);
+
+  const filteredDistricts = useMemo(() => {
+    const districts = selectedRegion?.districts ?? [];
+    const q = normalizeName(districtQuery);
+    if (!q) return districts;
+    return districts.filter((d) => normalizeName(d.name).includes(q));
+  }, [selectedRegion, districtQuery]);
+
+  function selectRegion(id: string) {
+    setRegionId(id);
+    setDistrictId("");
+    setDistrictQuery("");
+    setError(null);
+  }
+
+  function selectDistrict(id: string) {
+    setDistrictId(id);
+    setError(null);
+  }
 
   function resetForm() {
-    setTopic(""); setDistrict("MBEYA"); setOtherDistrict(""); setConcern("");
-    setAnonymous(false); setConsent(false); setContact(""); setPriority("NORMAL");
+    setStep("location");
+    setLocationMethod("manual");
+    setRegionId("");
+    setDistrictId("");
+    setRegionQuery("");
+    setDistrictQuery("");
+    setGpsStatus("idle");
+    setGpsMessageKey(null);
+    setCoords(null);
+    setIncludeCoords(false);
+    setTopic("");
+    setConcern("");
+    setAnonymous(false);
+    setConsent(false);
+    setContact("");
+    setPriority("NORMAL");
+  }
+
+  async function detectLocation() {
+    if (!("geolocation" in navigator)) {
+      setGpsStatus("unavailable");
+      setGpsMessageKey("help.locationUnavailable");
+      return;
+    }
+    setGpsStatus("detecting");
+    setGpsMessageKey(null);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        setCoords({ latitude, longitude });
+        try {
+          const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(String(latitude))}&lon=${encodeURIComponent(String(longitude))}&zoom=10&addressdetails=1`;
+          const response = await fetch(url, { headers: { Accept: "application/json" } });
+          if (!response.ok) throw new Error("reverse geocoding failed");
+          const data = (await response.json()) as { address?: Record<string, string | undefined> };
+          const address = data.address ?? {};
+          const region = pickRegionFromAddress(address);
+          const district = region ? pickDistrictFromAddress(region, address) : undefined;
+          if (region) {
+            setRegionId(region.id);
+            setRegionQuery("");
+            setDistrictId(district?.id ?? "");
+            setDistrictQuery("");
+          }
+          if (region && district) {
+            setGpsStatus("detected");
+            setGpsMessageKey("help.locationDetected");
+          } else {
+            setGpsStatus("needs_review");
+            setGpsMessageKey("help.locationNeedsReview");
+          }
+        } catch {
+          setGpsStatus("needs_review");
+          setGpsMessageKey("help.locationNeedsReview");
+        }
+      },
+      (geoError) => {
+        setCoords(null);
+        setIncludeCoords(false);
+        if (geoError.code === geoError.PERMISSION_DENIED) {
+          setGpsStatus("denied");
+          setGpsMessageKey("help.locationPermissionDenied");
+        } else if (geoError.code === geoError.POSITION_UNAVAILABLE) {
+          setGpsStatus("unavailable");
+          setGpsMessageKey("help.locationUnavailable");
+        } else {
+          setGpsStatus("failed");
+          setGpsMessageKey("help.locationFailed");
+        }
+      },
+      { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 },
+    );
+  }
+
+  function goToDetails(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    if (!selectedRegion) return setError({ kind: "key", key: "help.errorRegion" });
+    if (!selectedDistrict) return setError({ kind: "key", key: "help.errorDistrict" });
+    setStep("details");
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    setError("");
-    if (!topic) return setError(t.errors.topic);
-    const districtCode = (district === "OTHER" ? otherDistrict : district).trim().toUpperCase();
-    if (districtCode.length < 2 || districtCode.length > 20) return setError(t.errors.district);
-    if (anonymous && contact.trim()) return setError(t.errors.both);
-    if (consent && !anonymous && !contact.trim()) return setError(t.errors.contact);
+    setError(null);
+    if (!selectedRegion || !selectedDistrict) {
+      setStep("location");
+      return setError({ kind: "key", key: "help.errorLocation" });
+    }
+    if (!topic) return setError({ kind: "key", key: "help.errorTopic" });
+    if (anonymous && contact.trim()) return setError({ kind: "key", key: "help.errorBoth" });
+    if (consent && !anonymous && !contact.trim()) return setError({ kind: "key", key: "help.errorContact" });
 
     setBusy(true);
     try {
       const result = await submitHelpRequest({
         topic,
-        districtCode,
+        districtCode: selectedDistrict.id.toUpperCase(),
+        regionId: selectedRegion.id,
+        regionName: selectedRegion.name,
+        districtId: selectedDistrict.id,
+        districtName: selectedDistrict.name,
         channel: "WEB",
         concernSummary: concern.trim() || undefined,
         anonymousReport: anonymous,
         consentToContact: consent && !anonymous,
         contact: consent && !anonymous ? contact.trim() : undefined,
         priority,
+        locationConsentGiven: Boolean(includeCoords && coords),
+        latitude: includeCoords && coords ? coords.latitude : undefined,
+        longitude: includeCoords && coords ? coords.longitude : undefined,
       });
       setReceipt(result);
       resetForm();
     } catch (cause) {
-      setError(cause instanceof ApiError || cause instanceof Error ? cause.message : "Could not send your request. Please try again.");
+      setError({ kind: "api", cause });
     } finally {
       setBusy(false);
     }
   }
 
-  return (
-    <main className="min-h-screen bg-soft text-ink">
-      <header className="sticky top-0 z-20 border-b border-line bg-paper/95 px-4 py-3 backdrop-blur md:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-          <a href="/" className="flex items-center gap-2 text-sm font-medium text-muted hover:text-ink">
-            <ArrowLeft size={17} /> <span className="hidden sm:inline">{t.back}</span><span className="sm:hidden">SalamaLine</span>
-          </a>
-          <a href="/" className="brand-text text-lg font-semibold tracking-tight md:text-xl">salamaline</a>
-          <div className="flex items-center gap-2" aria-label="Language">
-            <button type="button" onClick={() => setLang("sw")} aria-pressed={lang === "sw"} className={`min-h-10 rounded-full px-3.5 py-2 text-sm transition ${lang === "sw" ? "bg-pink text-white" : "text-muted hover:bg-pink-soft hover:text-pink"}`}>SW</button>
-            <button type="button" onClick={() => setLang("en")} aria-pressed={lang === "en"} className={`min-h-10 rounded-full px-3.5 py-2 text-sm transition ${lang === "en" ? "bg-pink text-white" : "text-muted hover:bg-pink-soft hover:text-pink"}`}>EN</button>
-          </div>
-        </div>
-      </header>
+  const privacyLines = [t("help.privacy1"), t("help.privacy2"), t("help.privacy3"), t("help.privacy4")];
+  const selectedLocationLabel =
+    selectedRegion && selectedDistrict ? `${selectedRegion.name} · ${selectedDistrict.name}` : null;
 
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 md:grid-cols-[320px_minmax(0,1fr)] md:py-10">
+  return (
+    <main className="min-h-screen bg-paper text-ink">
+      <PublicHeader current={current} />
+
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 pb-10 pt-32 sm:px-6 md:grid-cols-[320px_minmax(0,1fr)] md:pt-40">
         <aside className="space-y-4">
           <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-5 shadow-sm md:p-6">
             <span className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-soft text-pink"><Heart size={21} /></span>
-            <h1 className="mt-4 text-2xl font-semibold leading-tight md:text-3xl">{t.title}</h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{t.intro}</p>
+            <h1 className="mt-4 text-2xl font-semibold leading-tight md:text-3xl">{t("help.title")}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{t("help.intro")}</p>
           </div>
           <div className="rounded-[var(--radius-card)] border border-line bg-paper p-5 text-sm">
-            <p className="mb-3 flex items-center gap-2 font-semibold text-ink"><Shield size={17} className="text-pink" />{t.privacyTitle}</p>
+            <p className="mb-3 flex items-center gap-2 font-semibold text-ink"><Shield size={17} className="text-pink" />{t("help.privacyTitle")}</p>
             <ul className="space-y-2.5 text-muted">
-              {[t.privacy1, t.privacy2, t.privacy3, t.privacy4].map((line) => (
+              {privacyLines.map((line) => (
                 <li key={line} className="flex gap-2"><Check size={15} className="mt-0.5 shrink-0 text-pink" /><span>{line}</span></li>
               ))}
             </ul>
           </div>
           <div role="note" className="rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-5 text-sm leading-relaxed">
-            <p className="mb-2 flex items-center gap-2 font-semibold text-pink"><CircleAlert size={17} />{t.safetyTitle}</p>
-            <p className="text-ink">{t.safety}</p>
+            <p className="mb-2 flex items-center gap-2 font-semibold text-pink"><CircleAlert size={17} />{t("help.safetyTitle")}</p>
+            <p className="text-ink">{t("help.safety")}</p>
           </div>
           <a href="/ai" className="flex items-center justify-between rounded-[var(--radius-card)] border border-line bg-paper px-5 py-4 text-sm font-medium text-ink transition hover:border-pink-line hover:bg-pink-soft">
-            <span>{lang === "sw" ? "Pata taarifa za kuaminika" : "Read trusted information"}</span><span className="text-pink">→</span>
+            <span>{t("help.trustedInformation")}</span><span className="text-pink">→</span>
+          </a>
+          <a href="/track" className="flex items-center gap-3 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft px-5 py-4 text-sm transition hover:bg-pink-line">
+            <Search size={18} className="shrink-0 text-pink" />
+            <span>
+              <span className="block font-semibold text-pink">{t("help.track")}</span>
+              <span className="mt-0.5 block text-xs text-ink">{t("help.trackHint")}</span>
+            </span>
           </a>
         </aside>
 
-        <section aria-label={t.form} className="min-w-0 rounded-[var(--radius-panel)] border border-line bg-paper p-5 shadow-[var(--shadow-soft)] sm:p-7 md:p-9">
+        <section aria-label={t("help.form")} className="min-w-0 rounded-[var(--radius-panel)] border border-line bg-paper p-5 shadow-[var(--shadow-soft)] sm:p-7 md:p-9">
           {receipt ? (
             <div className="mx-auto max-w-lg py-4 text-center">
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-pink-soft text-pink"><Check size={27} /></span>
-              <h2 className="mt-5 text-2xl font-semibold tracking-tight">{t.received}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{receipt.message}</p>
+              <h2 className="mt-5 text-2xl font-semibold tracking-tight">{t("help.received")}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{t("help.trainedReviews")}</p>
               <div className="mt-7 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-6">
-                <p className="text-xs font-semibold uppercase tracking-wide text-pink">{t.code}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-pink">{t("help.code")}</p>
                 <p className="mt-2 break-all font-mono text-3xl font-semibold tracking-wider text-ink">{receipt.caseCode}</p>
-                <p className="mt-3 text-sm leading-relaxed text-muted">{t.codeHint}</p>
+                <p className="mt-3 text-sm leading-relaxed text-muted">{t("help.codeHint")}</p>
               </div>
-              <p className="mt-5 flex items-start justify-center gap-2 text-sm text-muted"><Lock size={16} className="mt-0.5 shrink-0 text-pink" />{t.saved}</p>
+              <p className="mt-5 flex items-start justify-center gap-2 text-sm text-muted"><Lock size={16} className="mt-0.5 shrink-0 text-pink" />{t("help.saved")}</p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
-                <button type="button" onClick={() => setReceipt(null)} className="brand-fill min-h-11 rounded-full px-6 py-2.5 text-sm font-semibold text-white">{t.another}</button>
-                <a href="/" className="inline-flex min-h-11 items-center rounded-full border border-line px-6 py-2.5 text-sm font-semibold text-ink transition hover:border-pink-line hover:bg-pink-soft">{t.backHome}</a>
+                <a href={`/track?code=${encodeURIComponent(receipt.caseCode)}`} className="brand-fill inline-flex min-h-11 items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white">
+                  <Search size={16} />{t("help.trackThis")}
+                </a>
+                <button type="button" onClick={() => { setReceipt(null); }} className="inline-flex min-h-11 items-center rounded-full border border-line px-6 py-2.5 text-sm font-semibold text-ink transition hover:border-pink-line hover:bg-pink-soft">{t("help.another")}</button>
+                <a href="/" className="inline-flex min-h-11 items-center rounded-full border border-line px-6 py-2.5 text-sm font-semibold text-ink transition hover:border-pink-line hover:bg-pink-soft">{t("common.backHome")}</a>
               </div>
             </div>
           ) : (
-            <form onSubmit={(event) => void submit(event)} className="space-y-6" noValidate>
-              <h2 className="text-xl font-semibold tracking-tight">{t.form}</h2>
-              {error && <p role="alert" className="flex items-start gap-2 rounded-xl border border-pink-line bg-pink-soft px-3 py-2.5 text-sm leading-relaxed text-pink-hover"><CircleAlert size={16} className="mt-0.5 shrink-0" />{error}</p>}
-
-              <label className="block">
-                <span className="text-sm font-semibold">{t.topic}</span>
-                <select value={topic} onChange={(event) => setTopic(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink">
-                  <option value="">—</option>
-                  {topics.map((item) => <option key={item.value} value={item.value}>{lang === "sw" ? item.sw : item.en}</option>)}
-                </select>
-                <span className="mt-1.5 block text-xs text-muted">{t.topicHint}</span>
-              </label>
-
-              <div>
-                <label htmlFor="help-district" className="text-sm font-semibold">{t.district}</label>
-                <select id="help-district" value={district} onChange={(event) => setDistrict(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink">
-                  {districts.map((item) => <option key={item} value={item}>{item}</option>)}
-                  <option value="OTHER">{t.districtOther}</option>
-                </select>
-                {district === "OTHER" && (
-                  <input value={otherDistrict} onChange={(event) => setOtherDistrict(event.target.value)} maxLength={20} placeholder="e.g. MBEYA" className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink" />
-                )}
-                <p className="mt-1.5 text-xs text-muted">{t.districtHint}</p>
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-semibold tracking-tight">{t("help.form")}</h2>
+                <p className="rounded-full bg-soft px-3 py-1 text-xs font-semibold text-muted">
+                  {t("help.stepOf", { current: step === "location" ? 1 : 2, total: 2 })}
+                </p>
               </div>
 
-              <label className="block">
-                <span className="text-sm font-semibold">{t.concern}</span>
-                <textarea value={concern} onChange={(event) => setConcern(event.target.value)} maxLength={2000} rows={4} placeholder={t.concernPlaceholder} className="mt-2 w-full resize-y rounded-xl border border-line bg-paper px-3 py-3 text-sm leading-relaxed outline-none placeholder:text-muted/70 focus:border-pink" />
-                <span className="mt-1.5 block text-xs leading-relaxed text-muted">{t.concernHint}</span>
-              </label>
+              {error && <p role="alert" className="flex items-start gap-2 rounded-xl border border-pink-line bg-pink-soft px-3 py-2.5 text-sm leading-relaxed text-pink-hover"><CircleAlert size={16} className="mt-0.5 shrink-0" />{error.kind === "key" ? t(error.key) : errorMessage(error.cause)}</p>}
 
-              <div className="space-y-3 rounded-[var(--radius-card)] border border-line bg-soft p-4">
-                <label className="flex items-start gap-3 text-sm">
-                  <input type="checkbox" checked={anonymous} onChange={(event) => { const next = event.target.checked; setAnonymous(next); if (next) { setConsent(false); setContact(""); } }} className="mt-1 h-4 w-4 accent-[var(--brand-pink)]" />
-                  <span><span className="font-semibold">{t.anonymous}</span><span className="mt-0.5 block text-xs text-muted">{t.anonymousHint}</span></span>
-                </label>
-                <label className={`flex items-start gap-3 text-sm ${anonymous ? "opacity-45" : ""}`}>
-                  <input type="checkbox" disabled={anonymous} checked={consent && !anonymous} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[var(--brand-pink)]" />
-                  <span><span className="font-semibold">{t.consent}</span><span className="mt-0.5 block text-xs leading-relaxed text-muted">{t.consentHint}</span></span>
-                </label>
-                {consent && !anonymous && (
+              {step === "location" ? (
+                <form onSubmit={goToDetails} className="space-y-6" noValidate>
+                  <div className="rounded-[var(--radius-card)] border border-line bg-soft p-4">
+                    <p className="flex items-center gap-2 text-sm font-semibold"><MapPin size={17} className="text-pink" />{t("help.locationMethodTitle")}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted">{t("help.locationMethodHint")}</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {([
+                        ["manual", "help.methodManual", "help.methodManualHint"],
+                        ["gps", "help.methodGps", "help.methodGpsHint"],
+                      ] as const).map(([value, labelKey, hintKey]) => (
+                        <label key={value} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm transition ${locationMethod === value ? "border-pink bg-paper" : "border-line bg-paper/70 hover:border-pink-line"}`}>
+                          <input
+                            type="radio"
+                            name="location-method"
+                            value={value}
+                            checked={locationMethod === value}
+                            onChange={() => setLocationMethod(value)}
+                            className="mt-1 accent-[var(--brand-pink)]"
+                          />
+                          <span>
+                            <span className="block font-semibold">{t(labelKey)}</span>
+                            <span className="mt-0.5 block text-xs leading-relaxed text-muted">{t(hintKey)}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {locationMethod === "gps" && (
+                    <div className="space-y-3 rounded-[var(--radius-card)] border border-line p-4">
+                      <button
+                        type="button"
+                        onClick={() => void detectLocation()}
+                        disabled={gpsStatus === "detecting"}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-pink-line bg-pink-soft px-5 py-2.5 text-sm font-semibold text-pink transition hover:bg-pink-line disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <LocateFixed size={16} />
+                        {gpsStatus === "detecting" ? t("help.detectingLocation") : t("help.useMyLocation")}
+                      </button>
+                      {gpsMessageKey && (
+                        <p className={`rounded-xl px-3 py-2.5 text-sm leading-relaxed ${gpsStatus === "detected" ? "bg-soft text-ink" : "bg-pink-soft text-pink-hover"}`}>
+                          {t(gpsMessageKey)}
+                        </p>
+                      )}
+                      {coords && (
+                        <div className="space-y-2 text-sm">
+                          <p className="text-muted">{t("help.coordsDetected", { lat: coords.latitude.toFixed(5), lng: coords.longitude.toFixed(5) })}</p>
+                          <label className="flex items-start gap-3">
+                            <input type="checkbox" checked={includeCoords} onChange={(e) => setIncludeCoords(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--brand-pink)]" />
+                            <span>
+                              <span className="font-semibold">{t("help.includeCoords")}</span>
+                              <span className="mt-0.5 block text-xs leading-relaxed text-muted">{t("help.includeCoordsHint")}</span>
+                            </span>
+                          </label>
+                        </div>
+                      )}
+                      {!coords && (gpsStatus === "denied" || gpsStatus === "unavailable" || gpsStatus === "failed") && (
+                        <p className="text-xs text-muted">{t("help.includeCoordsUnavailable")}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <SearchableOptionList
+                      id="region"
+                      label={t("help.region")}
+                      searchLabel={t("help.regionSearch")}
+                      searchPlaceholder={t("help.regionPlaceholder")}
+                      query={regionQuery}
+                      onQueryChange={setRegionQuery}
+                      options={filteredRegions}
+                      selectedId={regionId}
+                      onSelect={selectRegion}
+                    />
+                    <SearchableOptionList
+                      id="district"
+                      label={t("help.district")}
+                      searchLabel={t("help.districtSearch")}
+                      searchPlaceholder={t("help.districtPlaceholder")}
+                      query={districtQuery}
+                      onQueryChange={setDistrictQuery}
+                      options={filteredDistricts}
+                      selectedId={districtId}
+                      onSelect={selectDistrict}
+                      disabled={!selectedRegion}
+                      disabledHint={t("help.districtDisabled")}
+                    />
+                  </div>
+                  <p className="text-xs leading-relaxed text-muted">{t("help.districtHint")}</p>
+
+                  {selectedLocationLabel && (
+                    <p className="rounded-xl border border-pink-line bg-pink-soft px-3 py-2.5 text-sm">
+                      <span className="font-semibold text-pink">{t("help.locationSelected")}:</span>{" "}
+                      <span className="text-ink">{selectedLocationLabel}</span>
+                    </p>
+                  )}
+
+                  <button type="submit" className="brand-fill inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white">
+                    {t("help.continue")} <ChevronRight size={17} />
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={(event) => void submit(event)} className="space-y-6" noValidate>
+                  <div className="rounded-[var(--radius-card)] border border-line bg-soft p-4 text-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("help.locationSelected")}</p>
+                    <p className="mt-1 font-semibold text-ink">{selectedLocationLabel ?? "—"}</p>
+                    {includeCoords && coords && (
+                      <p className="mt-1 text-xs text-muted">{t("help.coordsDetected", { lat: coords.latitude.toFixed(5), lng: coords.longitude.toFixed(5) })}</p>
+                    )}
+                  </div>
+
                   <label className="block">
-                    <span className="text-sm font-semibold">{t.contact}</span>
-                    <input value={contact} onChange={(event) => setContact(event.target.value)} maxLength={100} autoComplete="off" className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink" />
-                    <span className="mt-1.5 block text-xs text-muted">{t.contactHint}</span>
+                    <span className="text-sm font-semibold">{t("help.topic")}</span>
+                    <select value={topic} onChange={(event) => setTopic(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink">
+                      <option value="">—</option>
+                      {topics.map((value) => {
+                        const key: TranslationKey = `labels.topics.${value}`;
+                        return <option key={value} value={value}>{t(key)}</option>;
+                      })}
+                    </select>
+                    <span className="mt-1.5 block text-xs text-muted">{t("help.topicHint")}</span>
                   </label>
-                )}
-              </div>
 
-              <fieldset>
-                <legend className="text-sm font-semibold">{t.priority}</legend>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {(["NORMAL", "URGENT"] as const).map((value) => (
-                    <label key={value} className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm transition ${priority === value ? "border-pink bg-pink-soft font-semibold text-pink" : "border-line bg-paper hover:border-pink-line"}`}>
-                      <input type="radio" name="priority" value={value} checked={priority === value} onChange={() => setPriority(value)} className="accent-[var(--brand-pink)]" />
-                      {value === "NORMAL" ? t.normal : t.urgent}
+                  <label className="block">
+                    <span className="text-sm font-semibold">{t("help.concern")}</span>
+                    <textarea value={concern} onChange={(event) => setConcern(event.target.value)} maxLength={2000} rows={4} placeholder={t("help.concernPlaceholder")} className="mt-2 w-full resize-y rounded-xl border border-line bg-paper px-3 py-3 text-sm leading-relaxed outline-none placeholder:text-muted/70 focus:border-pink" />
+                    <span className="mt-1.5 block text-xs leading-relaxed text-muted">{t("help.concernHint")}</span>
+                  </label>
+
+                  <div className="space-y-3 rounded-[var(--radius-card)] border border-line bg-soft p-4">
+                    <label className="flex items-start gap-3 text-sm">
+                      <input type="checkbox" checked={anonymous} onChange={(event) => { const next = event.target.checked; setAnonymous(next); if (next) { setConsent(false); setContact(""); } }} className="mt-1 h-4 w-4 accent-[var(--brand-pink)]" />
+                      <span><span className="font-semibold">{t("help.anonymous")}</span><span className="mt-0.5 block text-xs text-muted">{t("help.anonymousHint")}</span></span>
                     </label>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted">{t.urgencyNote}</p>
-              </fieldset>
+                    <label className={`flex items-start gap-3 text-sm ${anonymous ? "opacity-45" : ""}`}>
+                      <input type="checkbox" disabled={anonymous} checked={consent && !anonymous} onChange={(event) => setConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[var(--brand-pink)]" />
+                      <span><span className="font-semibold">{t("help.consent")}</span><span className="mt-0.5 block text-xs leading-relaxed text-muted">{t("help.consentHint")}</span></span>
+                    </label>
+                    {consent && !anonymous && (
+                      <label className="block">
+                        <span className="text-sm font-semibold">{t("help.contact")}</span>
+                        <input value={contact} onChange={(event) => setContact(event.target.value)} maxLength={100} autoComplete="off" className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink" />
+                        <span className="mt-1.5 block text-xs text-muted">{t("help.contactHint")}</span>
+                      </label>
+                    )}
+                  </div>
 
-              <button type="submit" disabled={busy} className="brand-fill inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
-                {busy ? t.sending : <><Send size={17} />{t.submit}</>}
-              </button>
-              <p className="flex items-center justify-center gap-2 text-xs text-muted"><Users size={14} className="text-pink" />{lang === "sw" ? "Mtu aliyefunzwa atakagua kila ombi." : "A trained person reviews every request."}</p>
-            </form>
+                  <fieldset>
+                    <legend className="text-sm font-semibold">{t("help.priority")}</legend>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {(["NORMAL", "URGENT"] as const).map((value) => {
+                        const key: TranslationKey = `labels.priorities.${value}`;
+                        return (
+                          <label key={value} className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm transition ${priority === value ? "border-pink bg-pink-soft font-semibold text-pink" : "border-line bg-paper hover:border-pink-line"}`}>
+                            <input type="radio" name="priority" value={value} checked={priority === value} onChange={() => setPriority(value)} className="accent-[var(--brand-pink)]" />
+                            {t(key)}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-muted">{t("help.urgencyNote")}</p>
+                  </fieldset>
+
+                  <div className="flex flex-wrap gap-3">
+                    <button type="button" onClick={() => { setError(null); setStep("location"); }} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-line px-6 py-3 text-sm font-semibold text-ink transition hover:border-pink-line hover:bg-pink-soft">
+                      <ChevronLeft size={17} /> {t("help.back")}
+                    </button>
+                    <button type="submit" disabled={busy} className="brand-fill inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                      {busy ? t("common.sending") : <><Send size={17} />{t("help.submit")}</>}
+                    </button>
+                  </div>
+                  <p className="flex items-center justify-center gap-2 text-xs text-muted"><Users size={14} className="text-pink" />{t("help.trainedReviews")}</p>
+                </form>
+              )}
+            </div>
           )}
         </section>
       </div>

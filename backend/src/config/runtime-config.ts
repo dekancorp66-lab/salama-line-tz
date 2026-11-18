@@ -1,3 +1,5 @@
+export type TrustProxySetting = boolean | number | string[];
+
 export interface RuntimeConfig {
   nodeEnv: string;
   port: number;
@@ -10,12 +12,28 @@ export interface RuntimeConfig {
   swaggerEnabled: boolean;
   loginMaxAttempts: number;
   loginLockMinutes: number;
+  trustProxy: TrustProxySetting;
 }
 
 function positiveInteger(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/**
+ * Express `trust proxy` setting. Defaults to false (never trust forwarded
+ * headers) so per-client rate limiting fails closed unless an operator
+ * explicitly configures the trusted proxy hops or addresses.
+ */
+function parseTrustProxy(value: string | undefined): TrustProxySetting {
+  const raw = value?.trim();
+  if (!raw) return false;
+  if (raw.toLowerCase() === 'true') return true;
+  if (raw.toLowerCase() === 'false') return false;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  const entries = raw.split(',').map((entry) => entry.trim()).filter(Boolean);
+  return entries.length ? entries : false;
 }
 
 /**
@@ -68,5 +86,6 @@ export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     swaggerEnabled: env.SWAGGER_ENABLED === 'true',
     loginMaxAttempts: positiveInteger(env.LOGIN_MAX_ATTEMPTS, 5),
     loginLockMinutes: positiveInteger(env.LOGIN_LOCK_MINUTES, 15),
+    trustProxy: parseTrustProxy(env.TRUST_PROXY),
   };
 }

@@ -1,0 +1,1026 @@
+/**
+ * Canonical list of Tanzania regions and their district/council divisions
+ * (31 regions: 26 mainland + 5 Zanzibar). Used for backend validation of
+ * help-request locations.
+ *
+ * Keep in sync with frontend/src/salama/data/tanzania-mainland-locations.json.
+ */
+export interface TanzaniaDistrict {
+  id: string;
+  name: string;
+}
+
+export interface TanzaniaRegion {
+  id: string;
+  name: string;
+  districts: TanzaniaDistrict[];
+}
+
+export const TANZANIA_MAINLAND_REGIONS: TanzaniaRegion[] = [
+  {
+    "id": "arusha",
+    "name": "Arusha",
+    "districts": [
+      {
+        "id": "arusha-arusha-city",
+        "name": "Arusha City"
+      },
+      {
+        "id": "arusha-arusha-district",
+        "name": "Arusha District"
+      },
+      {
+        "id": "arusha-karatu-district",
+        "name": "Karatu District"
+      },
+      {
+        "id": "arusha-longido-district",
+        "name": "Longido District"
+      },
+      {
+        "id": "arusha-meru-district",
+        "name": "Meru District"
+      },
+      {
+        "id": "arusha-monduli-district",
+        "name": "Monduli District"
+      },
+      {
+        "id": "arusha-ngorongoro-district",
+        "name": "Ngorongoro District"
+      }
+    ]
+  },
+  {
+    "id": "dar-es-salaam",
+    "name": "Dar es Salaam",
+    "districts": [
+      {
+        "id": "dar-es-salaam-ilala",
+        "name": "Ilala"
+      },
+      {
+        "id": "dar-es-salaam-kigamboni",
+        "name": "Kigamboni"
+      },
+      {
+        "id": "dar-es-salaam-kinondoni",
+        "name": "Kinondoni"
+      },
+      {
+        "id": "dar-es-salaam-temeke",
+        "name": "Temeke"
+      },
+      {
+        "id": "dar-es-salaam-ubungo",
+        "name": "Ubungo"
+      }
+    ]
+  },
+  {
+    "id": "dodoma",
+    "name": "Dodoma",
+    "districts": [
+      {
+        "id": "dodoma-dodoma-city",
+        "name": "Dodoma City"
+      },
+      {
+        "id": "dodoma-kondoa-urban",
+        "name": "Kondoa Urban"
+      },
+      {
+        "id": "dodoma-bahi-district",
+        "name": "Bahi District"
+      },
+      {
+        "id": "dodoma-chamwino-district",
+        "name": "Chamwino District"
+      },
+      {
+        "id": "dodoma-chemba-district",
+        "name": "Chemba District"
+      },
+      {
+        "id": "dodoma-kondoa-district",
+        "name": "Kondoa District"
+      },
+      {
+        "id": "dodoma-kongwa-district",
+        "name": "Kongwa District"
+      },
+      {
+        "id": "dodoma-mpwapwa-district",
+        "name": "Mpwapwa District"
+      }
+    ]
+  },
+  {
+    "id": "geita",
+    "name": "Geita",
+    "districts": [
+      {
+        "id": "geita-geita-urban",
+        "name": "Geita Urban"
+      },
+      {
+        "id": "geita-bukombe-district",
+        "name": "Bukombe District"
+      },
+      {
+        "id": "geita-chato-district",
+        "name": "Chato District"
+      },
+      {
+        "id": "geita-geita-district",
+        "name": "Geita District"
+      },
+      {
+        "id": "geita-mbogwe-district",
+        "name": "Mbogwe District"
+      },
+      {
+        "id": "geita-nyanghwale-district",
+        "name": "Nyang'hwale District"
+      }
+    ]
+  },
+  {
+    "id": "iringa",
+    "name": "Iringa",
+    "districts": [
+      {
+        "id": "iringa-iringa-city",
+        "name": "Iringa City"
+      },
+      {
+        "id": "iringa-mafinga-urban",
+        "name": "Mafinga Urban"
+      },
+      {
+        "id": "iringa-iringa-district",
+        "name": "Iringa District"
+      },
+      {
+        "id": "iringa-kilolo-district",
+        "name": "Kilolo District"
+      },
+      {
+        "id": "iringa-mufindi-district",
+        "name": "Mufindi District"
+      }
+    ]
+  },
+  {
+    "id": "kagera",
+    "name": "Kagera",
+    "districts": [
+      {
+        "id": "kagera-bukoba-city",
+        "name": "Bukoba City"
+      },
+      {
+        "id": "kagera-biharamulo-district",
+        "name": "Biharamulo District"
+      },
+      {
+        "id": "kagera-bukoba-district",
+        "name": "Bukoba District"
+      },
+      {
+        "id": "kagera-karagwe-district",
+        "name": "Karagwe District"
+      },
+      {
+        "id": "kagera-kyerwa-district",
+        "name": "Kyerwa District"
+      },
+      {
+        "id": "kagera-missenyi-district",
+        "name": "Missenyi District"
+      },
+      {
+        "id": "kagera-muleba-district",
+        "name": "Muleba District"
+      },
+      {
+        "id": "kagera-ngara-district",
+        "name": "Ngara District"
+      }
+    ]
+  },
+  {
+    "id": "kaskazini-pemba",
+    "name": "Kaskazini Pemba",
+    "districts": [
+      {
+        "id": "kaskazini-pemba-micheweni-district",
+        "name": "Micheweni District"
+      },
+      {
+        "id": "kaskazini-pemba-wete-district",
+        "name": "Wete District"
+      }
+    ]
+  },
+  {
+    "id": "kaskazini-unguja",
+    "name": "Kaskazini Unguja",
+    "districts": [
+      {
+        "id": "kaskazini-unguja-kaskazini-a-district",
+        "name": "Kaskazini A District"
+      },
+      {
+        "id": "kaskazini-unguja-kaskazini-b-district",
+        "name": "Kaskazini B District"
+      }
+    ]
+  },
+  {
+    "id": "katavi",
+    "name": "Katavi",
+    "districts": [
+      {
+        "id": "katavi-mpanda-urban",
+        "name": "Mpanda Urban"
+      },
+      {
+        "id": "katavi-mlele-district",
+        "name": "Mlele District"
+      },
+      {
+        "id": "katavi-mpanda-district",
+        "name": "Mpanda District"
+      },
+      {
+        "id": "katavi-mpimbwe-district",
+        "name": "Mpimbwe District"
+      },
+      {
+        "id": "katavi-nsimbo-district",
+        "name": "Nsimbo District"
+      }
+    ]
+  },
+  {
+    "id": "kigoma",
+    "name": "Kigoma",
+    "districts": [
+      {
+        "id": "kigoma-kigoma-ujiji-municipal-council",
+        "name": "Kigoma Ujiji Municipal Council"
+      },
+      {
+        "id": "kigoma-kasulu-urban",
+        "name": "Kasulu Urban"
+      },
+      {
+        "id": "kigoma-buhigwe-district",
+        "name": "Buhigwe District"
+      },
+      {
+        "id": "kigoma-kakonko-district",
+        "name": "Kakonko District"
+      },
+      {
+        "id": "kigoma-kasulu-district",
+        "name": "Kasulu District"
+      },
+      {
+        "id": "kigoma-kibondo-district",
+        "name": "Kibondo District"
+      },
+      {
+        "id": "kigoma-kigoma-district",
+        "name": "Kigoma District"
+      },
+      {
+        "id": "kigoma-uvinza-district",
+        "name": "Uvinza District"
+      }
+    ]
+  },
+  {
+    "id": "kilimanjaro",
+    "name": "Kilimanjaro",
+    "districts": [
+      {
+        "id": "kilimanjaro-moshi-city",
+        "name": "Moshi City"
+      },
+      {
+        "id": "kilimanjaro-hai-district",
+        "name": "Hai District"
+      },
+      {
+        "id": "kilimanjaro-moshi-district",
+        "name": "Moshi District"
+      },
+      {
+        "id": "kilimanjaro-mwanga-district",
+        "name": "Mwanga District"
+      },
+      {
+        "id": "kilimanjaro-rombo-district",
+        "name": "Rombo District"
+      },
+      {
+        "id": "kilimanjaro-same-district",
+        "name": "Same District"
+      },
+      {
+        "id": "kilimanjaro-siha-district",
+        "name": "Siha District"
+      }
+    ]
+  },
+  {
+    "id": "kusini-pemba",
+    "name": "Kusini Pemba",
+    "districts": [
+      {
+        "id": "kusini-pemba-chake-chake-district",
+        "name": "Chake Chake District"
+      },
+      {
+        "id": "kusini-pemba-mkoani-district",
+        "name": "Mkoani District"
+      }
+    ]
+  },
+  {
+    "id": "kusini-unguja",
+    "name": "Kusini Unguja",
+    "districts": [
+      {
+        "id": "kusini-unguja-kati-district",
+        "name": "Kati District"
+      },
+      {
+        "id": "kusini-unguja-kusini-district",
+        "name": "Kusini District"
+      }
+    ]
+  },
+  {
+    "id": "lindi",
+    "name": "Lindi",
+    "districts": [
+      {
+        "id": "lindi-lindi-city",
+        "name": "Lindi City"
+      },
+      {
+        "id": "lindi-kilwa-district",
+        "name": "Kilwa District"
+      },
+      {
+        "id": "lindi-lindi-district",
+        "name": "Lindi District"
+      },
+      {
+        "id": "lindi-liwale-district",
+        "name": "Liwale District"
+      },
+      {
+        "id": "lindi-nachingwea-district",
+        "name": "Nachingwea District"
+      },
+      {
+        "id": "lindi-ruangwa-district",
+        "name": "Ruangwa District"
+      }
+    ]
+  },
+  {
+    "id": "manyara",
+    "name": "Manyara",
+    "districts": [
+      {
+        "id": "manyara-babati-urban",
+        "name": "Babati Urban"
+      },
+      {
+        "id": "manyara-mbulu-urban",
+        "name": "Mbulu Urban"
+      },
+      {
+        "id": "manyara-babati-district",
+        "name": "Babati District"
+      },
+      {
+        "id": "manyara-hanang-district",
+        "name": "Hanang District"
+      },
+      {
+        "id": "manyara-kiteto-district",
+        "name": "Kiteto District"
+      },
+      {
+        "id": "manyara-mbulu-district",
+        "name": "Mbulu District"
+      },
+      {
+        "id": "manyara-simanjiro-district",
+        "name": "Simanjiro District"
+      }
+    ]
+  },
+  {
+    "id": "mara",
+    "name": "Mara",
+    "districts": [
+      {
+        "id": "mara-musoma-city",
+        "name": "Musoma City"
+      },
+      {
+        "id": "mara-bunda-urban",
+        "name": "Bunda Urban"
+      },
+      {
+        "id": "mara-tarime-urban",
+        "name": "Tarime Urban"
+      },
+      {
+        "id": "mara-bunda-district",
+        "name": "Bunda District"
+      },
+      {
+        "id": "mara-butiama-district",
+        "name": "Butiama District"
+      },
+      {
+        "id": "mara-musoma-district",
+        "name": "Musoma District"
+      },
+      {
+        "id": "mara-rorya-district",
+        "name": "Rorya District"
+      },
+      {
+        "id": "mara-serengeti-district",
+        "name": "Serengeti District"
+      },
+      {
+        "id": "mara-tarime-district",
+        "name": "Tarime District"
+      }
+    ]
+  },
+  {
+    "id": "mbeya",
+    "name": "Mbeya",
+    "districts": [
+      {
+        "id": "mbeya-mbeya-city",
+        "name": "Mbeya City"
+      },
+      {
+        "id": "mbeya-busokelo-district",
+        "name": "Busokelo District"
+      },
+      {
+        "id": "mbeya-chunya-district",
+        "name": "Chunya District"
+      },
+      {
+        "id": "mbeya-kyela-district",
+        "name": "Kyela District"
+      },
+      {
+        "id": "mbeya-mbarali-district",
+        "name": "Mbarali District"
+      },
+      {
+        "id": "mbeya-mbeya-district",
+        "name": "Mbeya District"
+      },
+      {
+        "id": "mbeya-rungwe-district",
+        "name": "Rungwe District"
+      }
+    ]
+  },
+  {
+    "id": "mjini-magharibi",
+    "name": "Mjini Magharibi",
+    "districts": [
+      {
+        "id": "mjini-magharibi-magharibi-district",
+        "name": "Magharibi District"
+      },
+      {
+        "id": "mjini-magharibi-mjini-district",
+        "name": "Mjini District"
+      }
+    ]
+  },
+  {
+    "id": "morogoro",
+    "name": "Morogoro",
+    "districts": [
+      {
+        "id": "morogoro-morogoro-city",
+        "name": "Morogoro City"
+      },
+      {
+        "id": "morogoro-ifakara-urban",
+        "name": "Ifakara Urban"
+      },
+      {
+        "id": "morogoro-gairo-district",
+        "name": "Gairo District"
+      },
+      {
+        "id": "morogoro-kilombero-district",
+        "name": "Kilombero District"
+      },
+      {
+        "id": "morogoro-kilosa-district",
+        "name": "Kilosa District"
+      },
+      {
+        "id": "morogoro-malinyi-district",
+        "name": "Malinyi District"
+      },
+      {
+        "id": "morogoro-morogoro-district",
+        "name": "Morogoro District"
+      },
+      {
+        "id": "morogoro-mvomero-district",
+        "name": "Mvomero District"
+      },
+      {
+        "id": "morogoro-ulanga-district",
+        "name": "Ulanga District"
+      }
+    ]
+  },
+  {
+    "id": "mtwara",
+    "name": "Mtwara",
+    "districts": [
+      {
+        "id": "mtwara-mtwara-city",
+        "name": "Mtwara City"
+      },
+      {
+        "id": "mtwara-masasi-urban",
+        "name": "Masasi Urban"
+      },
+      {
+        "id": "mtwara-nanyumbu-urban",
+        "name": "Nanyumbu Urban"
+      },
+      {
+        "id": "mtwara-newala-urban",
+        "name": "Newala Urban"
+      },
+      {
+        "id": "mtwara-masasi-district",
+        "name": "Masasi District"
+      },
+      {
+        "id": "mtwara-mtwara-district",
+        "name": "Mtwara District"
+      },
+      {
+        "id": "mtwara-nanyumbu-district",
+        "name": "Nanyumbu District"
+      },
+      {
+        "id": "mtwara-newala-district",
+        "name": "Newala District"
+      },
+      {
+        "id": "mtwara-tandahimba-district",
+        "name": "Tandahimba District"
+      }
+    ]
+  },
+  {
+    "id": "mwanza",
+    "name": "Mwanza",
+    "districts": [
+      {
+        "id": "mwanza-mwanza-city",
+        "name": "Mwanza City"
+      },
+      {
+        "id": "mwanza-ilemela-urban",
+        "name": "Ilemela Urban"
+      },
+      {
+        "id": "mwanza-buchosa-district",
+        "name": "Buchosa District"
+      },
+      {
+        "id": "mwanza-kwimba-district",
+        "name": "Kwimba District"
+      },
+      {
+        "id": "mwanza-magu-district",
+        "name": "Magu District"
+      },
+      {
+        "id": "mwanza-misungwi-district",
+        "name": "Misungwi District"
+      },
+      {
+        "id": "mwanza-sengerema-district",
+        "name": "Sengerema District"
+      },
+      {
+        "id": "mwanza-ukerewe-district",
+        "name": "Ukerewe District"
+      }
+    ]
+  },
+  {
+    "id": "njombe",
+    "name": "Njombe",
+    "districts": [
+      {
+        "id": "njombe-njombe-urban",
+        "name": "Njombe Urban"
+      },
+      {
+        "id": "njombe-makambako-urban",
+        "name": "Makambako Urban"
+      },
+      {
+        "id": "njombe-ludewa-district",
+        "name": "Ludewa District"
+      },
+      {
+        "id": "njombe-makete-district",
+        "name": "Makete District"
+      },
+      {
+        "id": "njombe-njombe-rural-district",
+        "name": "Njombe Rural District"
+      },
+      {
+        "id": "njombe-wangingombe-district",
+        "name": "Wanging'ombe District"
+      }
+    ]
+  },
+  {
+    "id": "pwani",
+    "name": "Pwani",
+    "districts": [
+      {
+        "id": "pwani-kibaha-urban",
+        "name": "Kibaha Urban"
+      },
+      {
+        "id": "pwani-bagamoyo-district",
+        "name": "Bagamoyo District"
+      },
+      {
+        "id": "pwani-chalinze-district",
+        "name": "Chalinze District"
+      },
+      {
+        "id": "pwani-kibaha-district",
+        "name": "Kibaha District"
+      },
+      {
+        "id": "pwani-kisarawe-district",
+        "name": "Kisarawe District"
+      },
+      {
+        "id": "pwani-mafia-district",
+        "name": "Mafia District"
+      },
+      {
+        "id": "pwani-mkuranga-district",
+        "name": "Mkuranga District"
+      },
+      {
+        "id": "pwani-rufiji-district",
+        "name": "Rufiji District"
+      }
+    ]
+  },
+  {
+    "id": "rukwa",
+    "name": "Rukwa",
+    "districts": [
+      {
+        "id": "rukwa-sumbawanga-city",
+        "name": "Sumbawanga City"
+      },
+      {
+        "id": "rukwa-kalambo-district",
+        "name": "Kalambo District"
+      },
+      {
+        "id": "rukwa-nkasi-district",
+        "name": "Nkasi District"
+      },
+      {
+        "id": "rukwa-sumbawanga-district",
+        "name": "Sumbawanga District"
+      }
+    ]
+  },
+  {
+    "id": "ruvuma",
+    "name": "Ruvuma",
+    "districts": [
+      {
+        "id": "ruvuma-songea-city",
+        "name": "Songea City"
+      },
+      {
+        "id": "ruvuma-mbinga-urban",
+        "name": "Mbinga Urban"
+      },
+      {
+        "id": "ruvuma-madaba-district",
+        "name": "Madaba District"
+      },
+      {
+        "id": "ruvuma-mbinga-district",
+        "name": "Mbinga District"
+      },
+      {
+        "id": "ruvuma-namtumbo-district",
+        "name": "Namtumbo District"
+      },
+      {
+        "id": "ruvuma-nyasa-district",
+        "name": "Nyasa District"
+      },
+      {
+        "id": "ruvuma-songea-district",
+        "name": "Songea District"
+      },
+      {
+        "id": "ruvuma-tunduru-district",
+        "name": "Tunduru District"
+      }
+    ]
+  },
+  {
+    "id": "shinyanga",
+    "name": "Shinyanga",
+    "districts": [
+      {
+        "id": "shinyanga-shinyanga-city",
+        "name": "Shinyanga City"
+      },
+      {
+        "id": "shinyanga-kahama-city",
+        "name": "Kahama City"
+      },
+      {
+        "id": "shinyanga-kishapu-district",
+        "name": "Kishapu District"
+      },
+      {
+        "id": "shinyanga-msalala-district",
+        "name": "Msalala District"
+      },
+      {
+        "id": "shinyanga-shinyanga-district",
+        "name": "Shinyanga District"
+      },
+      {
+        "id": "shinyanga-ushetu-district",
+        "name": "Ushetu District"
+      }
+    ]
+  },
+  {
+    "id": "simiyu",
+    "name": "Simiyu",
+    "districts": [
+      {
+        "id": "simiyu-bariadi-urban",
+        "name": "Bariadi Urban"
+      },
+      {
+        "id": "simiyu-bariadi-district",
+        "name": "Bariadi District"
+      },
+      {
+        "id": "simiyu-busega-district",
+        "name": "Busega District"
+      },
+      {
+        "id": "simiyu-itilima-district",
+        "name": "Itilima District"
+      },
+      {
+        "id": "simiyu-maswa-district",
+        "name": "Maswa District"
+      },
+      {
+        "id": "simiyu-meatu-district",
+        "name": "Meatu District"
+      }
+    ]
+  },
+  {
+    "id": "singida",
+    "name": "Singida",
+    "districts": [
+      {
+        "id": "singida-singida-urban",
+        "name": "Singida Urban"
+      },
+      {
+        "id": "singida-ikungi-district",
+        "name": "Ikungi District"
+      },
+      {
+        "id": "singida-iramba-district",
+        "name": "Iramba District"
+      },
+      {
+        "id": "singida-itigi-district",
+        "name": "Itigi District"
+      },
+      {
+        "id": "singida-manyoni-district",
+        "name": "Manyoni District"
+      },
+      {
+        "id": "singida-mkalama-district",
+        "name": "Mkalama District"
+      },
+      {
+        "id": "singida-singida-district",
+        "name": "Singida District"
+      }
+    ]
+  },
+  {
+    "id": "songwe",
+    "name": "Songwe",
+    "districts": [
+      {
+        "id": "songwe-tunduma-urban",
+        "name": "Tunduma Urban"
+      },
+      {
+        "id": "songwe-ileje-district",
+        "name": "Ileje District"
+      },
+      {
+        "id": "songwe-mbozi-district",
+        "name": "Mbozi District"
+      },
+      {
+        "id": "songwe-momba-district",
+        "name": "Momba District"
+      },
+      {
+        "id": "songwe-songwe-district",
+        "name": "Songwe District"
+      }
+    ]
+  },
+  {
+    "id": "tabora",
+    "name": "Tabora",
+    "districts": [
+      {
+        "id": "tabora-tabora-urban",
+        "name": "Tabora Urban"
+      },
+      {
+        "id": "tabora-nzega-urban",
+        "name": "Nzega Urban"
+      },
+      {
+        "id": "tabora-igunga-district",
+        "name": "Igunga District"
+      },
+      {
+        "id": "tabora-kaliua-district",
+        "name": "Kaliua District"
+      },
+      {
+        "id": "tabora-nzega-district",
+        "name": "Nzega District"
+      },
+      {
+        "id": "tabora-sikonge-district",
+        "name": "Sikonge District"
+      },
+      {
+        "id": "tabora-urambo-district",
+        "name": "Urambo District"
+      },
+      {
+        "id": "tabora-uyui-district",
+        "name": "Uyui District"
+      }
+    ]
+  },
+  {
+    "id": "tanga",
+    "name": "Tanga",
+    "districts": [
+      {
+        "id": "tanga-tanga-city",
+        "name": "Tanga City"
+      },
+      {
+        "id": "tanga-handeni-urban",
+        "name": "Handeni Urban"
+      },
+      {
+        "id": "tanga-korogwe-urban",
+        "name": "Korogwe Urban"
+      },
+      {
+        "id": "tanga-bumbuli-district",
+        "name": "Bumbuli District"
+      },
+      {
+        "id": "tanga-handeni-district",
+        "name": "Handeni District"
+      },
+      {
+        "id": "tanga-kilindi-district",
+        "name": "Kilindi District"
+      },
+      {
+        "id": "tanga-korogwe-district",
+        "name": "Korogwe District"
+      },
+      {
+        "id": "tanga-lushoto-district",
+        "name": "Lushoto District"
+      },
+      {
+        "id": "tanga-mkinga-district",
+        "name": "Mkinga District"
+      },
+      {
+        "id": "tanga-muheza-district",
+        "name": "Muheza District"
+      },
+      {
+        "id": "tanga-pangani-district",
+        "name": "Pangani District"
+      }
+    ]
+  }
+];
+/** Alias for compatibility/readability; dataset includes all Tanzania regions. */
+export const TANZANIA_REGIONS = TANZANIA_MAINLAND_REGIONS;
+
+export function findRegionById(id: string): TanzaniaRegion | undefined {
+  return TANZANIA_MAINLAND_REGIONS.find((r) => r.id === id);
+}
+
+export function findRegionByName(name: string): TanzaniaRegion | undefined {
+  const n = name.trim().toLowerCase();
+  return TANZANIA_MAINLAND_REGIONS.find((r) => r.name.toLowerCase() === n);
+}
+
+export function findDistrict(regionId: string, districtId: string): TanzaniaDistrict | undefined {
+  return findRegionById(regionId)?.districts.find((d) => d.id === districtId);
+}
+
+export function findDistrictByName(regionId: string, districtName: string): TanzaniaDistrict | undefined {
+  const n = districtName.trim().toLowerCase();
+  return findRegionById(regionId)?.districts.find((d) => d.name.toLowerCase() === n);
+}
+
+export function isValidRegionDistrict(regionId: string, districtId: string): boolean {
+  return Boolean(findDistrict(regionId, districtId));
+}
+
+export function isValidRegionDistrictByNames(regionName: string, districtName: string): boolean {
+  const region = findRegionByName(regionName);
+  if (!region) return false;
+  const n = districtName.trim().toLowerCase();
+  return region.districts.some((d) => d.name.toLowerCase() === n);
+}
+
+export function resolveLocation(input: {
+  regionId?: string;
+  regionName?: string;
+  districtId?: string;
+  districtName?: string;
+}): { region: TanzaniaRegion; district: TanzaniaDistrict } | null {
+  const region =
+    (input.regionId ? findRegionById(input.regionId) : undefined) ??
+    (input.regionName ? findRegionByName(input.regionName) : undefined);
+  if (!region) return null;
+  const district =
+    (input.districtId ? findDistrict(region.id, input.districtId) : undefined) ??
+    (input.districtName ? findDistrictByName(region.id, input.districtName) : undefined);
+  if (!district) return null;
+  return { region, district };
+}

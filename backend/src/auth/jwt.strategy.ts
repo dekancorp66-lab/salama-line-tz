@@ -20,6 +20,7 @@ export class JwtStrategy {
         email: user.email,
         role: user.role,
         districtCode: user.districtCode,
+        institutionId: user.institutionId,
       };
     } catch {
       throw new UnauthorizedException('Invalid or expired access token');

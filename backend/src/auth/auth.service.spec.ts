@@ -3,9 +3,17 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import { createHash } from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
 import { AuthService } from './auth.service';
+
+// The production hash cost is intentionally high; this mocked unit test only
+// needs a real hash/compare pair, so keep it fast and deterministic on slow CI.
+jest.mock('bcrypt', () => {
+  const actual = jest.requireActual('bcrypt');
+  return { ...actual, hash: (data: string) => actual.hash(data, 4) };
+});
 
 interface StoredUser {
   id: string;
@@ -217,5 +225,54 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(storedUser.passwordHash).toBe(previousHash);
     expect(storedUser.tokenVersion).toBe(0);
+  });
+
+  it('issues a token carrying the SUPER_ADMIN role for an active super administrator', async () => {
+    const password = 'A-super-admin-password-789!';
+    storedUser = {
+      id: 'super-1',
+      email: 'wilbardmagaso777@gmail.com',
+      passwordHash: await bcrypt.hash(password, 12),
+      displayName: 'Owner',
+      role: UserRole.SUPER_ADMIN,
+      districtCode: null,
+      isActive: true,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      lastLoginAt: null,
+      tokenVersion: 2,
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await expect(
+      auth.login({ email: 'wilbardmagaso777@gmail.com', password }),
+    ).resolves.toMatchObject({
+      accessToken: 'access-token',
+      user: { id: 'super-1', role: UserRole.SUPER_ADMIN },
+    });
+    expect(jwtMock.signAsync).toHaveBeenCalledWith({
+      sub: 'super-1',
+      role: UserRole.SUPER_ADMIN,
+      ver: 2,
+    });
+  });
+
+  it('public registration never grants SUPER_ADMIN, even for the owner email', async () => {
+    const result = await auth.register({
+      email: 'wilbardmagaso777@gmail.com',
+      password: 'A-long-password-123!',
+      displayName: 'Not The Owner',
+    });
+
+    expect(result.user.role).toBe(UserRole.RESPONDER);
+    expect(result.user.isActive).toBe(false);
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ role: expect.anything() }),
+      }),
+    );
   });
 });

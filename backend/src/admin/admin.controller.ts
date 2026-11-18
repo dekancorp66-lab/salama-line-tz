@@ -24,16 +24,19 @@ import {
   CASE_MANAGEMENT_ROLES,
   CONTENT_MANAGEMENT_ROLES,
   SERVICE_MANAGEMENT_ROLES,
+  isPrivilegedRole,
 } from '../common/roles';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { isSuperAdmin } from '../common/super-admin';
 import { PrismaService } from '../database/prisma.service';
 import { ApproveAiKnowledgeDto } from './dto/approve-ai-knowledge.dto';
+import { CreateInstitutionDto } from './dto/create-institution.dto';
 import { CreateAiKnowledgeSourceDto } from './dto/create-ai-knowledge-source.dto';
 import { CreateConsentPolicyDto } from './dto/create-consent-policy.dto';
 import { CreateServiceEntryDto } from './dto/create-service-entry.dto';
 import { ResponderAvailabilityDto } from './dto/responder-availability.dto';
+import { UpdateInstitutionDto } from './dto/update-institution.dto';
 import { UpdateUserAccessDto } from './dto/update-user-access.dto';
 import { VerifyServiceDto } from './dto/verify-service.dto';
 
@@ -41,6 +44,7 @@ interface AuthenticatedAdmin {
   id: string;
   email: string;
   role?: string;
+  institutionId?: string | null;
 }
 
 @ApiTags('admin')
@@ -62,17 +66,101 @@ export class AdminController {
     return Math.max(value, 0);
   }
 
+  /**
+   * Non-super-admin staff are confined to their own institution. A missing
+   * institution id fails closed to a sentinel that matches no real record.
+   */
+  private scopeWhere(actor: AuthenticatedAdmin): { institutionId: string } | Record<string, never> {
+    return isSuperAdmin(actor) ? {} : { institutionId: actor.institutionId || '__none__' };
+  }
+
+  // --- Institution provisioning -------------------------------------------
+
+  /** Super Admins see all institutions; other admins only their own. */
+  @Get('institutions')
+  institutions(@CurrentUser() actor: AuthenticatedAdmin) {
+    return this.prisma.institution.findMany({
+      where: isSuperAdmin(actor) ? {} : { id: actor.institutionId || '__none__' },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        districtCode: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  @Post('institutions')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Create an institution (Super Admin only)' })
+  async createInstitution(
+    @Body() dto: CreateInstitutionDto,
+    @CurrentUser() actor: AuthenticatedAdmin,
+  ) {
+    const code = dto.code.trim().toUpperCase();
+    const existing = await this.prisma.institution.findUnique({ where: { code } });
+    if (existing) throw new ForbiddenException('Institution code already exists');
+    const result = await this.prisma.institution.create({
+      data: {
+        name: dto.name.trim(),
+        code,
+        districtCode: dto.districtCode?.trim().toUpperCase() || null,
+        isActive: dto.isActive ?? true,
+      },
+    });
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'ADMIN_INSTITUTION_CREATED',
+      resourceType: 'INSTITUTION',
+      resourceId: result.id,
+      outcome: 'success',
+    });
+    return result;
+  }
+
+  @Patch('institutions/:id')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update an institution (Super Admin only)' })
+  async updateInstitution(
+    @Param('id') id: string,
+    @Body() dto: UpdateInstitutionDto,
+    @CurrentUser() actor: AuthenticatedAdmin,
+  ) {
+    const existing = await this.prisma.institution.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Institution not found');
+    const result = await this.prisma.institution.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+      },
+    });
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'ADMIN_INSTITUTION_UPDATED',
+      resourceType: 'INSTITUTION',
+      resourceId: id,
+      outcome: dto.isActive === false ? 'deactivated' : 'updated',
+    });
+    return result;
+  }
+
   // --- Staff and responder management -------------------------------------
 
   @Get('users')
-  users() {
+  users(@CurrentUser() actor: AuthenticatedAdmin) {
     return this.prisma.user.findMany({
+      where: this.scopeWhere(actor),
       select: {
         id: true,
         email: true,
         displayName: true,
         role: true,
         districtCode: true,
+        institutionId: true,
         isActive: true,
         createdAt: true,
       },
@@ -81,9 +169,9 @@ export class AdminController {
   }
 
   @Get('responders')
-  responders() {
+  responders(@CurrentUser() actor: AuthenticatedAdmin) {
     return this.prisma.user.findMany({
-      where: { role: UserRole.RESPONDER },
+      where: { role: UserRole.RESPONDER, ...this.scopeWhere(actor) },
       select: {
         id: true,
         email: true,
@@ -112,18 +200,18 @@ export class AdminController {
     const actorIsSuperAdmin = isSuperAdmin(actor);
     const target = await this.prisma.user.findUnique({
       where: { id },
-      select: { email: true, role: true, isActive: true },
+      select: { email: true, role: true, isActive: true, institutionId: true },
     });
     if (!target) throw new NotFoundException('User not found');
 
+    if (!actorIsSuperAdmin && (target.institutionId || '__none__') !== (actor.institutionId || '__none__')) {
+      throw new ForbiddenException('You can only manage staff in your own institution');
+    }
     if (!actorIsSuperAdmin && (target.role === UserRole.ADMIN || isSuperAdmin(target))) {
       throw new ForbiddenException('Only the super administrator can change administrator access');
     }
-    if (
-      (body.role === UserRole.ADMIN || body.role === UserRole.SUPER_ADMIN) &&
-      !actorIsSuperAdmin
-    ) {
-      throw new ForbiddenException('Only the super administrator can grant administrator access');
+    if (body.role && isPrivilegedRole(body.role) && !actorIsSuperAdmin) {
+      throw new ForbiddenException('Only the super administrator can grant privileged roles');
     }
     if (
       isSuperAdmin(target) &&
@@ -132,17 +220,43 @@ export class AdminController {
       throw new ForbiddenException('The super administrator account cannot be deactivated or downgraded');
     }
 
+    if (body.institutionId !== undefined && !actorIsSuperAdmin) {
+      throw new ForbiddenException('Only the super administrator can change institution access');
+    }
+    const scope = body.institutionId?.trim() || null;
+    if (scope) {
+      const institution = await this.prisma.institution.findUnique({
+        where: { id: scope },
+        select: { id: true, isActive: true },
+      });
+      if (!institution || !institution.isActive) {
+        throw new ForbiddenException('Institution must be an active institution');
+      }
+    }
+
     const statusChanged = target.isActive !== body.isActive;
     const roleChanged = Boolean(body.role && body.role !== target.role);
+    const institutionChanged = body.institutionId !== undefined && target.institutionId !== scope;
     const result = await this.prisma.user.update({
       where: { id },
       data: {
         isActive: body.isActive,
         ...(body.role ? { role: body.role } : {}),
         ...(body.districtCode !== undefined ? { districtCode: body.districtCode || null } : {}),
-        ...(statusChanged || roleChanged ? { tokenVersion: { increment: 1 } } : {}),
+        ...(body.institutionId !== undefined ? { institutionId: scope } : {}),
+        ...(statusChanged || roleChanged || institutionChanged
+          ? { tokenVersion: { increment: 1 } }
+          : {}),
       },
-      select: { id: true, email: true, displayName: true, role: true, districtCode: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        districtCode: true,
+        institutionId: true,
+        isActive: true,
+      },
     });
     await this.audit.record({
       actorUserId: actor.id,
@@ -162,9 +276,12 @@ export class AdminController {
   ) {
     const target = await this.prisma.user.findUnique({
       where: { id },
-      select: { role: true },
+      select: { role: true, institutionId: true },
     });
     if (!target) throw new NotFoundException('User not found');
+    if (!isSuperAdmin(actor) && (target.institutionId || '__none__') !== (actor.institutionId || '__none__')) {
+      throw new ForbiddenException('You can only manage staff in your own institution');
+    }
     if (target.role !== UserRole.RESPONDER) {
       throw new ForbiddenException('Availability can only be managed for responder accounts');
     }
@@ -527,13 +644,19 @@ export class AdminController {
     @Query('actorUserId') actorUserId?: string,
     @Query('take', new DefaultValuePipe(50), ParseIntPipe) take?: number,
     @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip?: number,
+    @CurrentUser() actor?: AuthenticatedAdmin,
   ) {
+    // A dedicated Auditor and the Super Admin have system-wide visibility.
+    // Ordinary institution admins only see events attributable to their staff.
+    const systemWide = Boolean(actor && (isSuperAdmin(actor) || actor.role === UserRole.AUDITOR));
+    const scope = systemWide ? null : (actor?.institutionId || '__none__');
     return this.prisma.auditEvent.findMany({
       where: {
         ...(action ? { action } : {}),
         ...(resourceType ? { resourceType } : {}),
         ...(outcome ? { outcome } : {}),
         ...(actorUserId ? { actorUserId } : {}),
+        ...(scope ? { actor: { institutionId: scope } } : {}),
       },
       select: {
         id: true,
@@ -551,17 +674,28 @@ export class AdminController {
   }
 
   @Get('metrics')
-  async metrics(@CurrentUser() actor: AuthenticatedAdmin) {
+  async metrics(
+    @Query('institutionId') institutionId?: string,
+    @CurrentUser() actor?: AuthenticatedAdmin,
+  ) {
+    // Institution-scoped admins always see their own dashboard. Only a Super
+    // Admin may request another institution's figures, and that read is audited.
+    const superAdmin = Boolean(actor && isSuperAdmin(actor));
+    const requested = institutionId?.trim();
+    const scope = superAdmin ? requested || null : (actor?.institutionId || null);
+    // A Super Admin with no explicit scope sees all institutions; every other
+    // actor (including an unscoped one) fails closed to its own institution.
+    const caseWhere = superAdmin && !scope ? {} : { institutionId: scope };
     const [cases, approvedContent, verifiedServices] = await Promise.all([
-      this.prisma.helpRequest.count(),
+      this.prisma.helpRequest.count({ where: caseWhere }),
       this.prisma.content.count({ where: { status: 'APPROVED' } }),
       this.prisma.serviceDirectoryEntry.count({ where: { isActive: true } }),
     ]);
     await this.audit.record({
-      actorUserId: actor.id,
+      actorUserId: actor?.id,
       action: 'ADMIN_METRICS_VIEWED',
       resourceType: 'SYSTEM',
-      outcome: 'success',
+      outcome: scope ? `institution:${scope}` : 'success',
     });
     return {
       cases: cases >= 5 ? cases : null,

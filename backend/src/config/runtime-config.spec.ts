@@ -57,4 +57,16 @@ describe('runtime configuration validation', () => {
     expect(config.swaggerEnabled).toBe(true);
     expect(config.frontendOrigins).toEqual(['https://salama.example.org']);
   });
+
+  it('defaults trust proxy to false so forwarded headers are ignored', () => {
+    expect(readRuntimeConfig(validEnv).trustProxy).toBe(false);
+  });
+
+  it('parses explicit trust proxy hops and address lists', () => {
+    expect(readRuntimeConfig({ ...validEnv, TRUST_PROXY: '1' }).trustProxy).toBe(1);
+    expect(readRuntimeConfig({ ...validEnv, TRUST_PROXY: 'true' }).trustProxy).toBe(true);
+    expect(
+      readRuntimeConfig({ ...validEnv, TRUST_PROXY: '127.0.0.1, 10.0.0.0/8' }).trustProxy,
+    ).toEqual(['127.0.0.1', '10.0.0.0/8']);
+  });
 });

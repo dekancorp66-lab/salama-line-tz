@@ -75,6 +75,20 @@ enum Channel {
   STAFF
 }
 
+model Institution {
+  id           String        @id @default(cuid())
+  name         String
+  code         String        @unique
+  districtCode String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  users        User[]
+  cases        HelpRequest[]
+
+  @@index([districtCode, isActive])
+}
+
 model User {
   id                      String                @id @default(cuid())
   email                   String                @unique
@@ -82,6 +96,8 @@ model User {
   displayName             String
   role                    UserRole              @default(RESPONDER)
   districtCode            String?
+  // Institutional scope. Null preserves legacy district-only accounts.
+  institutionId           String?
   isActive                Boolean               @default(false)
   // Security metadata: no raw passwords, tokens, or contact details are stored.
   failedLoginAttempts     Int                   @default(0)
@@ -102,6 +118,9 @@ model User {
   assignmentEventsTo      CaseAssignmentEvent[] @relation("CaseAssignmentTo")
   approvedKnowledge       AiKnowledgeSource[]   @relation("AiKnowledgeApprover")
   escalationEvents        EscalationEvent[]     @relation("EscalationActor")
+  institution             Institution?         @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId])
 }
 
 model Content {
@@ -151,7 +170,20 @@ model HelpRequest {
   id                  String                @id @default(cuid())
   caseCode            String                @unique
   topic               String
+  // Legacy/backward-compatible district identifier used for scoping and filters.
+  // For structured reports this is set to the canonical district ID (uppercase).
   districtCode        String
+  // Structured Tanzania Mainland location (nullable for legacy records).
+  regionId            String?
+  regionName          String?
+  districtId          String?
+  districtName        String?
+  // Optional GPS coordinates, stored only when the reporter explicitly consented.
+  latitude            Float?
+  longitude           Float?
+  locationConsentGiven Boolean              @default(false)
+  // Institution explicitly authorised for this case. Null = unassigned legacy case.
+  institutionId       String?
   channel             Channel
   status              HelpRequestStatus     @default(PENDING)
   priority            HelpRequestPriority   @default(NORMAL)
@@ -171,6 +203,7 @@ model HelpRequest {
   lastAlertAt         DateTime?
   escalationCount     Int                   @default(0)
   assignedResponder   User?                 @relation("AssignedCases", fields: [assignedResponderId], references: [id])
+  institution         Institution?         @relation(fields: [institutionId], references: [id], onDelete: SetNull)
   consents            ConsentRecord[]
   referrals           Referral[]
   notes               CaseNote[]
@@ -179,8 +212,10 @@ model HelpRequest {
   notifications       NotificationOutbox[]
 
   @@index([status, districtCode, priority, createdAt])
+  @@index([institutionId, status])
   @@index([contactHash])
   @@index([assignedResponderId, status])
+  @@index([regionId, districtId])
 }
 
 model ConsentRecord {

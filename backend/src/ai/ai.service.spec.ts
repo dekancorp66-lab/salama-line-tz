@@ -72,6 +72,16 @@ describe("SalamaLine AI grounded answers", () => {
     expect(swahili.status).toBe("answered");
   });
 
+  it("honors an explicit language when it differs from the detected language", async () => {
+    const english = await service.ask("Habari!", "en");
+    expect(english.language).toBe("en");
+    expect(english.directAnswer).toContain("Hello!");
+
+    const swahili = await service.ask("Hello, how are you?", "sw");
+    expect(swahili.language).toBe("sw");
+    expect(swahili.directAnswer).toMatch(/^Habari!/);
+  });
+
   it("acknowledges ordinary thanks", async () => {
     const result = await service.ask("Thank you, that's helpful.");
     expect(result.language).toBe("en");

@@ -1,5 +1,13 @@
 import { apiRequest } from "./api-client";
+import { isValidCaseCode, normalizeCaseCode, type CaseTrackingResult } from "./case-tracking";
 import type { CaseStatus, StaffUser } from "./staff-session";
+
+export type {
+  CaseTrackingResult,
+  PublicCaseStatus,
+  PublicProgressUpdate,
+} from "./case-tracking";
+export { isValidCaseCode, normalizeCaseCode } from "./case-tracking";
 
 export type ConsentPurpose = "CONTACT_FOR_HELP" | "SHARE_WITH_SERVICE" | "FOLLOW_UP";
 export type ConsentDecision = "GRANTED" | "DECLINED" | "REVOKED";
@@ -8,13 +16,22 @@ export type HelpChannel = "WEB" | "USSD" | "SMS" | "WHATSAPP" | "STAFF";
 
 export interface CreateHelpRequestInput {
   topic: string;
-  districtCode: string;
+  /** Legacy/backward-compatible district identifier (kept for compatibility). */
+  districtCode?: string;
+  regionId?: string;
+  regionName?: string;
+  districtId?: string;
+  districtName?: string;
   channel: HelpChannel;
   consentToContact: boolean;
   contact?: string;
   priority?: CasePriority;
   anonymousReport?: boolean;
   concernSummary?: string;
+  /** True only when the reporter explicitly chose to include GPS coordinates. */
+  locationConsentGiven?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface HelpRequestReceipt {
@@ -23,6 +40,10 @@ export interface HelpRequestReceipt {
   topic: string;
   concernSummary: string | null;
   districtCode: string;
+  regionId?: string | null;
+  regionName?: string | null;
+  districtId?: string | null;
+  districtName?: string | null;
   status: string;
   priority: CasePriority;
   createdAt: string;
@@ -34,6 +55,10 @@ export interface CaseSummary {
   caseCode: string;
   topic: string;
   districtCode: string;
+  regionId?: string | null;
+  regionName?: string | null;
+  districtId?: string | null;
+  districtName?: string | null;
   channel: HelpChannel;
   status: CaseStatus;
   priority: CasePriority;
@@ -89,6 +114,22 @@ export interface VerifiedService {
   districtCode: string;
   region: string;
   phonePublic: string | null;
+}
+
+/** Safe fields returned by the public verified-service directory. */
+export interface PublicServiceEntry {
+  id: string;
+  name: string;
+  type: string;
+  districtCode: string;
+  region: string;
+  phonePublic: string | null;
+  address: string | null;
+  openingHours: string | null;
+  languages: string[] | null;
+  verificationOrg: string;
+  verifiedAt: string;
+  expiresAt: string | null;
 }
 
 export interface StaffUserRecord {
@@ -183,6 +224,29 @@ function auth(token: string) {
 
 export function submitHelpRequest(input: CreateHelpRequestInput) {
   return apiRequest<HelpRequestReceipt>("/help-requests", { method: "POST", body: input });
+}
+
+/** Public, read-only verified-service directory (safe fields only). */
+export function listPublicServices(filters?: { district?: string; type?: string }) {
+  const params = new URLSearchParams();
+  if (filters?.district?.trim()) params.set("district", filters.district.trim().toUpperCase());
+  if (filters?.type?.trim()) params.set("type", filters.type.trim().toUpperCase());
+  const query = params.toString();
+  return apiRequest<PublicServiceEntry[]>(`/services${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Public case tracking. Validates locally first so malformed references and
+ * internal ids never reach the API; the backend independently re-validates.
+ */
+export function trackCase(caseCode: string) {
+  const normalized = normalizeCaseCode(caseCode);
+  if (!isValidCaseCode(normalized)) {
+    return Promise.reject(new Error("Enter a valid case reference number (for example SL-CC723587)"));
+  }
+  return apiRequest<CaseTrackingResult>(
+    `/case-tracking/${encodeURIComponent(normalized)}`,
+  );
 }
 
 // --- Authentication --------------------------------------------------------

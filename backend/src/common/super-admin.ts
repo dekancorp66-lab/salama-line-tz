@@ -13,11 +13,15 @@ export interface StaffIdentity {
 }
 
 /**
- * The dedicated SUPER_ADMIN role is the source of truth. The email check is
- * retained only for accounts bootstrapped before that role existed.
+ * The dedicated SUPER_ADMIN role is the single source of truth for privilege.
+ * Email is intentionally NOT consulted here: public registration accepts any
+ * email address, so an email-based check would let a self-registered account
+ * inherit super-admin rights. SUPER_ADMIN_EMAIL / isSuperAdminEmail are used
+ * only by the bootstrap allowlist that decides which account may be created
+ * as the initial super administrator.
  */
 export function isSuperAdmin(user: StaffIdentity): boolean {
-  return user.role === UserRole.SUPER_ADMIN || isSuperAdminEmail(user.email ?? '');
+  return user.role === UserRole.SUPER_ADMIN;
 }
 
 export function isPrivilegedAdmin(user: StaffIdentity): boolean {

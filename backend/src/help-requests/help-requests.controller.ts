@@ -7,6 +7,7 @@ import { ADMIN_ROLES, CASE_MANAGEMENT_ROLES, isAdminRole } from '../common/roles
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { AssignCaseDto } from './dto/assign-case.dto';
+import { AssignInstitutionDto } from './dto/assign-institution.dto';
 import { CreateCaseNoteDto } from './dto/create-case-note.dto';
 import { CreateHelpRequestDto } from './dto/create-help-request.dto';
 import { CreateReferralDto } from './dto/create-referral.dto';
@@ -45,6 +46,7 @@ export class HelpRequestsController {
     return this.service.listForStaff(
       isAdminRole(user?.role) ? district : user?.districtCode,
       allowAllDistricts,
+      user,
     );
   }
 
@@ -74,6 +76,22 @@ export class HelpRequestsController {
   @Post(':id/assign')
   assign(@Param('id') id: string, @Body() body: AssignCaseDto, @CurrentUser() user: any) {
     return this.service.assign(id, body, user);
+  }
+
+  /**
+   * Super Admin only: explicitly authorise an institution for a case. This is
+   * the sole way an institution gains access to a case it did not create.
+   */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...ADMIN_ROLES)
+  @Patch(':id/institution')
+  assignInstitution(
+    @Param('id') id: string,
+    @Body() body: AssignInstitutionDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.service.assignInstitution(id, body.institutionId, user);
   }
 
   @ApiBearerAuth()

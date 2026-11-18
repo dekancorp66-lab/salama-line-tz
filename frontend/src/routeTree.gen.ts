@@ -13,13 +13,23 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as InstitutionsRouteImport } from './routes/institutions'
 import { Route as OfficersRouteImport } from './routes/officers'
+import { Route as OrganizationsRouteImport } from './routes/organizations'
+import { Route as ReportRouteImport } from './routes/report'
+import { Route as ServicesRouteImport } from './routes/services'
+import { Route as TrackRouteImport } from './routes/track'
+import { Route as UssdRouteImport } from './routes/ussd'
+import { Route as ApiChannelsStatusRouteImport } from './routes/api/channels-status'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiSimulateRouteImport } from './routes/api/simulate'
 import { Route as ApiSmsRouteImport } from './routes/api/sms'
 import { Route as ApiStatsRouteImport } from './routes/api/stats'
 import { Route as ApiUssdRouteImport } from './routes/api/ussd'
 import { Route as ApiWhatsappRouteImport } from './routes/api/whatsapp'
+import { Route as OfficersIndexRouteImport } from './routes/officers/index'
+import { Route as OfficersDashboardRouteImport } from './routes/officers/dashboard'
+import { Route as OfficersLoginRouteImport } from './routes/officers/login'
 import { Route as ApiAdminRespondersRouteImport } from './routes/api/admin/responders'
 import { Route as ApiCronSweepRouteImport } from './routes/api/cron/sweep'
 
@@ -43,9 +53,44 @@ const HelpRoute = HelpRouteImport.update({
   path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InstitutionsRoute = InstitutionsRouteImport.update({
+  id: '/institutions',
+  path: '/institutions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OfficersRoute = OfficersRouteImport.update({
   id: '/officers',
   path: '/officers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationsRoute = OrganizationsRouteImport.update({
+  id: '/organizations',
+  path: '/organizations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportRoute = ReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesRoute = ServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UssdRoute = UssdRouteImport.update({
+  id: '/ussd',
+  path: '/ussd',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChannelsStatusRoute = ApiChannelsStatusRouteImport.update({
+  id: '/api/channels-status',
+  path: '/api/channels-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -78,6 +123,21 @@ const ApiWhatsappRoute = ApiWhatsappRouteImport.update({
   path: '/api/whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OfficersIndexRoute = OfficersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OfficersRoute,
+} as any)
+const OfficersDashboardRoute = OfficersDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => OfficersRoute,
+} as any)
+const OfficersLoginRoute = OfficersLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => OfficersRoute,
+} as any)
 const ApiAdminRespondersRoute = ApiAdminRespondersRouteImport.update({
   id: '/api/admin/responders',
   path: '/api/admin/responders',
@@ -94,13 +154,23 @@ export interface FileRoutesByFullPath {
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
   '/help': typeof HelpRoute
-  '/officers': typeof OfficersRoute
+  '/institutions': typeof InstitutionsRoute
+  '/officers': typeof OfficersRouteWithChildren
+  '/organizations': typeof OrganizationsRoute
+  '/report': typeof ReportRoute
+  '/services': typeof ServicesRoute
+  '/track': typeof TrackRoute
+  '/ussd': typeof UssdRoute
+  '/api/channels-status': typeof ApiChannelsStatusRoute
   '/api/health': typeof ApiHealthRoute
   '/api/simulate': typeof ApiSimulateRoute
   '/api/sms': typeof ApiSmsRoute
   '/api/stats': typeof ApiStatsRoute
   '/api/ussd': typeof ApiUssdRoute
   '/api/whatsapp': typeof ApiWhatsappRoute
+  '/officers/dashboard': typeof OfficersDashboardRoute
+  '/officers/login': typeof OfficersLoginRoute
+  '/officers/': typeof OfficersIndexRoute
   '/api/admin/responders': typeof ApiAdminRespondersRoute
   '/api/cron/sweep': typeof ApiCronSweepRoute
 }
@@ -109,13 +179,22 @@ export interface FileRoutesByTo {
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
   '/help': typeof HelpRoute
-  '/officers': typeof OfficersRoute
+  '/institutions': typeof InstitutionsRoute
+  '/organizations': typeof OrganizationsRoute
+  '/report': typeof ReportRoute
+  '/services': typeof ServicesRoute
+  '/track': typeof TrackRoute
+  '/ussd': typeof UssdRoute
+  '/api/channels-status': typeof ApiChannelsStatusRoute
   '/api/health': typeof ApiHealthRoute
   '/api/simulate': typeof ApiSimulateRoute
   '/api/sms': typeof ApiSmsRoute
   '/api/stats': typeof ApiStatsRoute
   '/api/ussd': typeof ApiUssdRoute
   '/api/whatsapp': typeof ApiWhatsappRoute
+  '/officers/dashboard': typeof OfficersDashboardRoute
+  '/officers/login': typeof OfficersLoginRoute
+  '/officers': typeof OfficersIndexRoute
   '/api/admin/responders': typeof ApiAdminRespondersRoute
   '/api/cron/sweep': typeof ApiCronSweepRoute
 }
@@ -125,13 +204,23 @@ export interface FileRoutesById {
   '/ai': typeof AiRoute
   '/dashboard': typeof DashboardRoute
   '/help': typeof HelpRoute
-  '/officers': typeof OfficersRoute
+  '/institutions': typeof InstitutionsRoute
+  '/officers': typeof OfficersRouteWithChildren
+  '/organizations': typeof OrganizationsRoute
+  '/report': typeof ReportRoute
+  '/services': typeof ServicesRoute
+  '/track': typeof TrackRoute
+  '/ussd': typeof UssdRoute
+  '/api/channels-status': typeof ApiChannelsStatusRoute
   '/api/health': typeof ApiHealthRoute
   '/api/simulate': typeof ApiSimulateRoute
   '/api/sms': typeof ApiSmsRoute
   '/api/stats': typeof ApiStatsRoute
   '/api/ussd': typeof ApiUssdRoute
   '/api/whatsapp': typeof ApiWhatsappRoute
+  '/officers/dashboard': typeof OfficersDashboardRoute
+  '/officers/login': typeof OfficersLoginRoute
+  '/officers/': typeof OfficersIndexRoute
   '/api/admin/responders': typeof ApiAdminRespondersRoute
   '/api/cron/sweep': typeof ApiCronSweepRoute
 }
@@ -142,13 +231,23 @@ export interface FileRouteTypes {
     | '/ai'
     | '/dashboard'
     | '/help'
+    | '/institutions'
     | '/officers'
+    | '/organizations'
+    | '/report'
+    | '/services'
+    | '/track'
+    | '/ussd'
+    | '/api/channels-status'
     | '/api/health'
     | '/api/simulate'
     | '/api/sms'
     | '/api/stats'
     | '/api/ussd'
     | '/api/whatsapp'
+    | '/officers/dashboard'
+    | '/officers/login'
+    | '/officers/'
     | '/api/admin/responders'
     | '/api/cron/sweep'
   fileRoutesByTo: FileRoutesByTo
@@ -157,13 +256,22 @@ export interface FileRouteTypes {
     | '/ai'
     | '/dashboard'
     | '/help'
-    | '/officers'
+    | '/institutions'
+    | '/organizations'
+    | '/report'
+    | '/services'
+    | '/track'
+    | '/ussd'
+    | '/api/channels-status'
     | '/api/health'
     | '/api/simulate'
     | '/api/sms'
     | '/api/stats'
     | '/api/ussd'
     | '/api/whatsapp'
+    | '/officers/dashboard'
+    | '/officers/login'
+    | '/officers'
     | '/api/admin/responders'
     | '/api/cron/sweep'
   id:
@@ -172,13 +280,23 @@ export interface FileRouteTypes {
     | '/ai'
     | '/dashboard'
     | '/help'
+    | '/institutions'
     | '/officers'
+    | '/organizations'
+    | '/report'
+    | '/services'
+    | '/track'
+    | '/ussd'
+    | '/api/channels-status'
     | '/api/health'
     | '/api/simulate'
     | '/api/sms'
     | '/api/stats'
     | '/api/ussd'
     | '/api/whatsapp'
+    | '/officers/dashboard'
+    | '/officers/login'
+    | '/officers/'
     | '/api/admin/responders'
     | '/api/cron/sweep'
   fileRoutesById: FileRoutesById
@@ -188,7 +306,14 @@ export interface RootRouteChildren {
   AiRoute: typeof AiRoute
   DashboardRoute: typeof DashboardRoute
   HelpRoute: typeof HelpRoute
-  OfficersRoute: typeof OfficersRoute
+  InstitutionsRoute: typeof InstitutionsRoute
+  OfficersRoute: typeof OfficersRouteWithChildren
+  OrganizationsRoute: typeof OrganizationsRoute
+  ReportRoute: typeof ReportRoute
+  ServicesRoute: typeof ServicesRoute
+  TrackRoute: typeof TrackRoute
+  UssdRoute: typeof UssdRoute
+  ApiChannelsStatusRoute: typeof ApiChannelsStatusRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiSimulateRoute: typeof ApiSimulateRoute
   ApiSmsRoute: typeof ApiSmsRoute
@@ -229,11 +354,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/institutions': {
+      id: '/institutions'
+      path: '/institutions'
+      fullPath: '/institutions'
+      preLoaderRoute: typeof InstitutionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/officers': {
       id: '/officers'
       path: '/officers'
       fullPath: '/officers'
       preLoaderRoute: typeof OfficersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizations': {
+      id: '/organizations'
+      path: '/organizations'
+      fullPath: '/organizations'
+      preLoaderRoute: typeof OrganizationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report': {
+      id: '/report'
+      path: '/report'
+      fullPath: '/report'
+      preLoaderRoute: typeof ReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services': {
+      id: '/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof ServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ussd': {
+      id: '/ussd'
+      path: '/ussd'
+      fullPath: '/ussd'
+      preLoaderRoute: typeof UssdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/channels-status': {
+      id: '/api/channels-status'
+      path: '/api/channels-status'
+      fullPath: '/api/channels-status'
+      preLoaderRoute: typeof ApiChannelsStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -278,6 +452,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/officers/': {
+      id: '/officers/'
+      path: '/'
+      fullPath: '/officers/'
+      preLoaderRoute: typeof OfficersIndexRouteImport
+      parentRoute: typeof OfficersRoute
+    }
+    '/officers/dashboard': {
+      id: '/officers/dashboard'
+      path: '/dashboard'
+      fullPath: '/officers/dashboard'
+      preLoaderRoute: typeof OfficersDashboardRouteImport
+      parentRoute: typeof OfficersRoute
+    }
+    '/officers/login': {
+      id: '/officers/login'
+      path: '/login'
+      fullPath: '/officers/login'
+      preLoaderRoute: typeof OfficersLoginRouteImport
+      parentRoute: typeof OfficersRoute
+    }
     '/api/admin/responders': {
       id: '/api/admin/responders'
       path: '/api/admin/responders'
@@ -295,12 +490,35 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface OfficersRouteChildren {
+  OfficersDashboardRoute: typeof OfficersDashboardRoute
+  OfficersLoginRoute: typeof OfficersLoginRoute
+  OfficersIndexRoute: typeof OfficersIndexRoute
+}
+
+const OfficersRouteChildren: OfficersRouteChildren = {
+  OfficersDashboardRoute: OfficersDashboardRoute,
+  OfficersLoginRoute: OfficersLoginRoute,
+  OfficersIndexRoute: OfficersIndexRoute,
+}
+
+const OfficersRouteWithChildren = OfficersRoute._addFileChildren(
+  OfficersRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiRoute: AiRoute,
   DashboardRoute: DashboardRoute,
   HelpRoute: HelpRoute,
-  OfficersRoute: OfficersRoute,
+  InstitutionsRoute: InstitutionsRoute,
+  OfficersRoute: OfficersRouteWithChildren,
+  OrganizationsRoute: OrganizationsRoute,
+  ReportRoute: ReportRoute,
+  ServicesRoute: ServicesRoute,
+  TrackRoute: TrackRoute,
+  UssdRoute: UssdRoute,
+  ApiChannelsStatusRoute: ApiChannelsStatusRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiSimulateRoute: ApiSimulateRoute,
   ApiSmsRoute: ApiSmsRoute,

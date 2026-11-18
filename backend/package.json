@@ -7,9 +7,13 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prestart": "node scripts/ensure-port-free.mjs",
     "start": "nest start",
+    "prestart:dev": "node scripts/ensure-port-free.mjs",
     "start:dev": "nest start --watch",
+    "prestart:debug": "node scripts/ensure-port-free.mjs",
     "start:debug": "nest start --debug --watch",
+    "prestart:prod": "node scripts/ensure-port-free.mjs",
     "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
@@ -20,6 +24,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "bootstrap:super-admin": "ts-node prisma/bootstrap-super-admin.ts",
     "seed": "prisma db seed"
   },
   "dependencies": {

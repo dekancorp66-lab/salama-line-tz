@@ -14,7 +14,9 @@ import {
 import { createHash, randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { canManageCases, isAdminRole } from '../common/roles';
+import { isSuperAdmin } from '../common/super-admin';
 import { PrismaService } from '../database/prisma.service';
+import { resolveLocation } from '../location/tanzania-mainland-locations';
 import { AssignCaseDto } from './dto/assign-case.dto';
 import { CreateCaseNoteDto } from './dto/create-case-note.dto';
 import { CreateHelpRequestDto } from './dto/create-help-request.dto';
@@ -27,11 +29,17 @@ export interface CaseActor {
   id: string;
   role?: string | null;
   districtCode?: string | null;
+  institutionId?: string | null;
 }
 
 interface CaseAccessRecord {
   districtCode: string;
+  districtId?: string | null;
+  districtName?: string | null;
+  regionId?: string | null;
+  regionName?: string | null;
   assignedResponderId: string | null;
+  institutionId?: string | null;
   escalationCount?: number;
 }
 
@@ -121,6 +129,12 @@ const CASE_VIEW_SELECT = {
   topic: true,
   concernSummary: true,
   districtCode: true,
+  regionId: true,
+  regionName: true,
+  districtId: true,
+  districtName: true,
+  // Coordinates are intentionally omitted from standard officer views; they are
+  // stored only with explicit consent and returned only where explicitly needed.
   channel: true,
   status: true,
   priority: true,
@@ -176,7 +190,55 @@ export class HelpRequestsService {
       .trim();
   }
 
+  private normalizeDistrictValue(value: string): string {
+    return value.trim().toUpperCase();
+  }
+
+  private districtMatches(record: CaseAccessRecord, actorDistrict: string): boolean {
+    const target = this.normalizeDistrictValue(actorDistrict);
+    if (!target) return false;
+    const compactTarget = target.replace(/[^A-Z0-9]+/g, '');
+    const rawCandidates = [
+      record.districtCode,
+      record.districtId,
+      record.districtName,
+      record.regionId,
+      record.regionName,
+    ].filter((value): value is string => Boolean(value?.trim()));
+
+    for (const candidate of rawCandidates) {
+      const normalized = this.normalizeDistrictValue(candidate);
+      if (normalized === target) return true;
+      const compact = normalized.replace(/[^A-Z0-9]+/g, '');
+      if (compactTarget && compact && compact === compactTarget) return true;
+    }
+
+    // Compatibility for legacy district scopes such as "KYELA" matching "Kyela District".
+    for (const candidate of rawCandidates) {
+      const normalized = this.normalizeDistrictValue(candidate);
+      if (
+        normalized.startsWith(`${target} `) ||
+        normalized.endsWith(` ${target}`) ||
+        normalized.includes(` ${target} `)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private assertCanManageCase(record: CaseAccessRecord, actor: CaseActor) {
+    // Super Admin is the only cross-institution role. Every access is audited
+    // in loadCase/listForStaff so it remains restricted and reviewable.
+    if (isSuperAdmin(actor)) return;
+
+    // Institution isolation is enforced before any district or assignment
+    // check. Staff only see cases whose institution exactly matches their own;
+    // unassigned (legacy) cases remain hidden until a Super Admin assigns them.
+    if ((record.institutionId ?? null) !== (actor.institutionId ?? null)) {
+      throw new ForbiddenException('Case is outside your institution');
+    }
+
     if (isAdminRole(actor.role)) return;
     if (!canManageCases(actor.role)) {
       throw new ForbiddenException('Insufficient permissions for this case');
@@ -184,7 +246,7 @@ export class HelpRequestsService {
     if (!actor.districtCode?.trim()) {
       throw new ForbiddenException('Responder is not assigned to a district');
     }
-    if (record.districtCode.toUpperCase() !== actor.districtCode.trim().toUpperCase()) {
+    if (!this.districtMatches(record, actor.districtCode)) {
       throw new ForbiddenException('Case is outside your authorized district');
     }
     if (record.assignedResponderId && record.assignedResponderId !== actor.id) {
@@ -198,13 +260,27 @@ export class HelpRequestsService {
       select: {
         id: true,
         districtCode: true,
+        districtId: true,
+        districtName: true,
+        regionId: true,
+        regionName: true,
         assignedResponderId: true,
+        institutionId: true,
         status: true,
         escalationCount: true,
       },
     });
     if (!record) throw new NotFoundException('Help request not found');
     this.assertCanManageCase(record, actor);
+    if (isSuperAdmin(actor)) {
+      await this.audit.record({
+        actorUserId: actor.id,
+        action: 'CASE_ACCESSED_BY_SUPER_ADMIN',
+        resourceType: 'HELP_REQUEST',
+        resourceId: record.id,
+        outcome: 'success',
+      });
+    }
     return record;
   }
 
@@ -219,19 +295,61 @@ export class HelpRequestsService {
     if (dto.contact && !consentToContact) {
       throw new BadRequestException('Do not submit contact details without explicit consent');
     }
+
+    const wantsStructuredLocation = Boolean(
+      dto.regionId?.trim() ||
+        dto.districtId?.trim() ||
+        dto.regionName?.trim() ||
+        dto.districtName?.trim(),
+    );
+    const resolved = wantsStructuredLocation
+      ? resolveLocation({
+          regionId: dto.regionId,
+          regionName: dto.regionName,
+          districtId: dto.districtId,
+          districtName: dto.districtName,
+        })
+      : null;
+    if (wantsStructuredLocation && !resolved) {
+      throw new BadRequestException(
+        'Select a valid Tanzania Mainland region and a district that belongs to that region',
+      );
+    }
+
+    const locationConsentGiven = Boolean(dto.locationConsentGiven);
+    const hasCoords = typeof dto.latitude === 'number' && typeof dto.longitude === 'number';
+    const latitude = locationConsentGiven && hasCoords ? dto.latitude : null;
+    const longitude = locationConsentGiven && hasCoords ? dto.longitude : null;
+
+    const districtCode = resolved
+      ? resolved.district.id.trim().toUpperCase()
+      : dto.districtCode?.trim().toUpperCase();
+    if (!districtCode) {
+      throw new BadRequestException('A valid district is required');
+    }
+
     // Contact encryption is intentionally not implemented with an implicit/static
     // key. The hash is for deduplication only and cannot be used to contact them.
     const contactHash = dto.contact ? this.hashContact(dto.contact) : null;
     const concernSummary = dto.concernSummary?.trim()
       ? this.redactText(dto.concernSummary)
       : null;
-    const caseCode = `SL-${randomBytes(4).toString('hex').toUpperCase()}`;
+    // 64 bits of CSPRNG entropy. Older 8-hex references remain valid for
+    // tracking (see TrackCaseDto) so existing records are not invalidated.
+    const caseCode = `SL-${randomBytes(8).toString('hex').toUpperCase()}`;
     const result = await this.prisma.helpRequest.create({
       data: {
         caseCode,
         topic: dto.topic.trim(),
         concernSummary,
-        districtCode: dto.districtCode.trim().toUpperCase(),
+        districtCode,
+        regionId: resolved?.region.id ?? null,
+        regionName: resolved?.region.name ?? null,
+        districtId: resolved?.district.id ?? null,
+        districtName: resolved?.district.name ?? null,
+        latitude,
+        longitude,
+        locationConsentGiven: latitude !== null && longitude !== null,
         channel: dto.channel as Channel,
         priority: dto.priority === 'URGENT' ? HelpRequestPriority.URGENT : HelpRequestPriority.NORMAL,
         consentToContact,
@@ -254,6 +372,10 @@ export class HelpRequestsService {
         topic: true,
         concernSummary: true,
         districtCode: true,
+        regionId: true,
+        regionName: true,
+        districtId: true,
+        districtName: true,
         status: true,
         priority: true,
         createdAt: true,
@@ -274,13 +396,23 @@ export class HelpRequestsService {
 
   /**
    * Fail closed: responders without a district never receive a cross-district
-   * query. Only explicitly authorized administrators may request all districts.
+   * queue. Institution-scoped staff only ever receive cases assigned to their
+   * institution. Only a Super Admin may query across institutions, and that
+   * access is audited.
    */
-  listForStaff(districtCode?: string, allowAllDistricts = false) {
-    if (!allowAllDistricts && !districtCode?.trim()) return Promise.resolve([]);
-    return this.prisma.helpRequest.findMany({
+  async listForStaff(districtCode?: string, allowAllDistricts = false, actor?: CaseActor) {
+    const districtScope = districtCode?.trim();
+    if (!allowAllDistricts && !districtScope) return [];
+    const superAdmin = actor ? isSuperAdmin(actor) : false;
+    // Fail closed: any non-super-admin actor (including a legacy unscoped one)
+    // is confined to its own institution. Unscoped accounts only see legacy
+    // cases that are themselves unscoped (institutionId null).
+    const institutionFilter: { institutionId: string | null } | Record<string, never> =
+      actor && !superAdmin ? { institutionId: actor.institutionId ?? null } : {};
+    const applyDistrictFilter = !allowAllDistricts || Boolean(districtScope);
+    const result = await this.prisma.helpRequest.findMany({
       where: {
-        ...(allowAllDistricts ? {} : { districtCode: districtCode!.trim().toUpperCase() }),
+        ...institutionFilter,
         status: { in: OPEN_STATUSES },
       },
       select: {
@@ -288,6 +420,11 @@ export class HelpRequestsService {
         caseCode: true,
         topic: true,
         districtCode: true,
+        regionId: true,
+        regionName: true,
+        districtId: true,
+        districtName: true,
+        institutionId: true,
         channel: true,
         status: true,
         priority: true,
@@ -297,6 +434,19 @@ export class HelpRequestsService {
       },
       orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
+    const filtered =
+      applyDistrictFilter && districtScope
+        ? result.filter((item) => this.districtMatches(item as unknown as CaseAccessRecord, districtScope))
+        : result;
+    if (superAdmin && actor) {
+      await this.audit.record({
+        actorUserId: actor.id,
+        action: 'CASE_QUEUE_ACCESSED_BY_SUPER_ADMIN',
+        resourceType: 'HELP_REQUEST',
+        outcome: 'success',
+      });
+    }
+    return filtered;
   }
 
   /** Single-case view. Never returns contactHash or contactCiphertext. */
@@ -324,6 +474,13 @@ export class HelpRequestsService {
       },
     });
     if (!record) throw new NotFoundException('Help request not found');
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'CASE_VIEWED',
+      resourceType: 'HELP_REQUEST',
+      resourceId: id,
+      outcome: 'success',
+    });
     return record;
   }
 
@@ -362,6 +519,9 @@ export class HelpRequestsService {
               contactCiphertext: null,
               contactHash: null,
               consentToContact: false,
+              latitude: null,
+              longitude: null,
+              locationConsentGiven: false,
             }
           : {}),
       },
@@ -395,12 +555,16 @@ export class HelpRequestsService {
 
     const target = await this.prisma.user.findUnique({
       where: { id: dto.responderId },
-      select: { id: true, role: true, districtCode: true, isActive: true },
+      select: { id: true, role: true, districtCode: true, institutionId: true, isActive: true },
     });
     if (!target || target.role !== 'RESPONDER' || !target.isActive) {
       throw new BadRequestException('Target must be an active responder account');
     }
-    if (current.districtCode.toUpperCase() !== target.districtCode?.trim().toUpperCase()) {
+    if (current.institutionId && target.institutionId !== current.institutionId) {
+      throw new BadRequestException('Target responder is not authorised for this case institution');
+    }
+    const targetDistrict = target.districtCode?.trim();
+    if (!targetDistrict || !this.districtMatches(current as unknown as CaseAccessRecord, targetDistrict)) {
       throw new BadRequestException('Target responder is not assigned to this case district');
     }
 
@@ -439,13 +603,55 @@ export class HelpRequestsService {
     return updated;
   }
 
+  /**
+   * Explicitly grants an institution access to a case. Only a Super Admin may
+   * do this; the authorisation itself is recorded in the audit log.
+   */
+  async assignInstitution(id: string, institutionId: string, actor: CaseActor) {
+    await this.loadCase(id, actor);
+    if (!isSuperAdmin(actor)) {
+      throw new ForbiddenException('Only a Super Admin can assign a case to an institution');
+    }
+    const scope = institutionId.trim();
+    if (scope) {
+      const institution = await this.prisma.institution.findUnique({
+        where: { id: scope },
+        select: { id: true, isActive: true },
+      });
+      if (!institution || !institution.isActive) {
+        throw new BadRequestException('Institution must be an active institution');
+      }
+    }
+    const result = await this.prisma.helpRequest.update({
+      where: { id },
+      data: { institutionId: scope || null },
+      select: { id: true, caseCode: true, institutionId: true },
+    });
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'CASE_INSTITUTION_ASSIGNED',
+      resourceType: 'HELP_REQUEST',
+      resourceId: id,
+      outcome: scope ? 'assigned' : 'cleared',
+    });
+    return result;
+  }
+
   async listNotes(id: string, actor: CaseActor) {
     await this.loadCase(id, actor);
-    return this.prisma.caseNote.findMany({
+    const result = await this.prisma.caseNote.findMany({
       where: { helpRequestId: id },
       select: { id: true, note: true, authorId: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     });
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'CASE_NOTES_VIEWED',
+      resourceType: 'HELP_REQUEST',
+      resourceId: id,
+      outcome: 'success',
+    });
+    return result;
   }
 
   async addNote(id: string, dto: CreateCaseNoteDto, actor: CaseActor) {
@@ -663,7 +869,7 @@ export class HelpRequestsService {
 
   async listReferrals(id: string, actor: CaseActor) {
     await this.loadCase(id, actor);
-    return this.prisma.referral.findMany({
+    const result = await this.prisma.referral.findMany({
       where: { helpRequestId: id },
       select: {
         id: true,
@@ -675,6 +881,14 @@ export class HelpRequestsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'CASE_REFERRALS_VIEWED',
+      resourceType: 'HELP_REQUEST',
+      resourceId: id,
+      outcome: 'success',
+    });
+    return result;
   }
 
   /**
@@ -701,6 +915,9 @@ export class HelpRequestsService {
           contactCiphertext: null,
           consentToContact: false,
           concernSummary: null,
+          latitude: null,
+          longitude: null,
+          locationConsentGiven: false,
         },
       });
       await this.audit.record({

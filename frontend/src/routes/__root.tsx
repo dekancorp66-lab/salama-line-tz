@@ -1,6 +1,10 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { I18nProvider } from "@/i18n/provider.tsx";
+import { en } from "@/i18n/en.ts";
+import { ThemeProvider } from "@/theme/provider.tsx";
+import { THEME_BOOTSTRAP_SCRIPT } from "@/theme/core.ts";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "SalamaLine";
@@ -10,8 +14,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SalamaLine — A confidential line for girls" },
-      { name: "description", content: "A free, confidential, Swahili-first line for girls' safety and wellbeing. Any phone. A trained person when she needs help." },
+      { title: "SalamaLine" },
+      { name: "description", content: en.meta.homeDescription },
       { name: "theme-color", content: "#fffdfb" },
     ],
     links: [
@@ -27,13 +31,18 @@ export const Route = createRootRoute({
   component: () => (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <HeadContent />
       </head>
       <body>
         <PreviewHostBridge />
-        <AuthProvider>
-          <Outlet />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <I18nProvider>
+              <Outlet />
+            </I18nProvider>
+          </AuthProvider>
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>

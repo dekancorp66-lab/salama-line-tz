@@ -88,20 +88,38 @@ describe('HelpRequestsService', () => {
     });
 
     it('scopes responder queries to the assigned district and only open states', async () => {
-      await service.listForStaff('mbeya', false);
-      expect(prismaMock.helpRequest.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            districtCode: 'MBEYA',
-            status: { in: expect.not.arrayContaining([HelpRequestStatus.RESOLVED]) },
-          }),
-        }),
+      prismaMock.helpRequest.findMany.mockResolvedValue([
+        { id: 'c1', districtCode: 'MBEYA', status: HelpRequestStatus.PENDING },
+        { id: 'c2', districtCode: 'DAR', status: HelpRequestStatus.PENDING },
+        {
+          id: 'c3',
+          districtCode: 'MBEYA-MBEYA-CITY',
+          districtId: 'mbeya-mbeya-city',
+          districtName: 'Mbeya City',
+          regionId: 'mbeya',
+          regionName: 'Mbeya',
+          status: HelpRequestStatus.PENDING,
+        },
+      ]);
+
+      await expect(service.listForStaff('mbeya', false)).resolves.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'c1' }),
+          expect.objectContaining({ id: 'c3' }),
+        ]),
       );
-      const statuses = prismaMock.helpRequest.findMany.mock.calls[0][0].where.status.in;
+      const result = await service.listForStaff('mbeya', false);
+      expect(result.map((item: any) => item.id)).toEqual(['c1', 'c3']);
+
+      const call = prismaMock.helpRequest.findMany.mock.calls[0][0];
+      expect(call.where.status.in).toEqual(expect.not.arrayContaining([HelpRequestStatus.RESOLVED]));
+      const statuses = call.where.status.in;
       expect(statuses).not.toContain(HelpRequestStatus.CLOSED);
       expect(statuses).not.toContain(HelpRequestStatus.CANCELLED);
       expect(statuses).not.toContain(HelpRequestStatus.EXPIRED);
       expect(statuses).not.toContain(HelpRequestStatus.RESOLVED);
+      // District compatibility filtering is applied after fetch to support legacy/canonical codes.
+      expect(call.where.districtCode).toBeUndefined();
     });
 
     it('allows an explicit administrator query across districts', async () => {
@@ -184,6 +202,78 @@ describe('HelpRequestsService', () => {
       expect(data.concernSummary).toContain('[contact removed]');
     });
 
+    it('stores a validated Tanzania Mainland region-district pair and derives canonical district code', async () => {
+      await service.create({
+        topic: 'school concern',
+        regionId: 'mbeya',
+        regionName: 'Mbeya',
+        districtId: 'mbeya-mbeya-city',
+        districtName: 'Mbeya City',
+        channel: 'WEB',
+        consentToContact: false,
+      });
+      const data = prismaMock.helpRequest.create.mock.calls[0][0].data;
+      expect(data).toMatchObject({
+        districtCode: 'MBEYA-MBEYA-CITY',
+        regionId: 'mbeya',
+        regionName: 'Mbeya',
+        districtId: 'mbeya-mbeya-city',
+        districtName: 'Mbeya City',
+        latitude: null,
+        longitude: null,
+        locationConsentGiven: false,
+      });
+    });
+
+    it('rejects a district that does not belong to the selected region', async () => {
+      await expect(
+        service.create({
+          topic: 'school concern',
+          regionId: 'mbeya',
+          districtId: 'arusha-arusha-city',
+          channel: 'WEB',
+          consentToContact: false,
+        }),
+      ).rejects.toThrow(/valid Tanzania Mainland region/);
+      expect(prismaMock.helpRequest.create).not.toHaveBeenCalled();
+    });
+
+    it('stores GPS coordinates only with explicit consent and clears them otherwise', async () => {
+      await service.create({
+        topic: 'school concern',
+        regionId: 'mbeya',
+        districtId: 'mbeya-mbeya-city',
+        channel: 'WEB',
+        consentToContact: false,
+        locationConsentGiven: true,
+        latitude: -8.909,
+        longitude: 33.458,
+      });
+      const withConsent = prismaMock.helpRequest.create.mock.calls[0][0].data;
+      expect(withConsent).toMatchObject({
+        latitude: -8.909,
+        longitude: 33.458,
+        locationConsentGiven: true,
+      });
+
+      prismaMock.helpRequest.create.mockClear();
+      await service.create({
+        topic: 'school concern',
+        regionId: 'mbeya',
+        districtId: 'mbeya-mbeya-city',
+        channel: 'WEB',
+        consentToContact: false,
+        latitude: -8.909,
+        longitude: 33.458,
+      });
+      const withoutConsent = prismaMock.helpRequest.create.mock.calls[0][0].data;
+      expect(withoutConsent).toMatchObject({
+        latitude: null,
+        longitude: null,
+        locationConsentGiven: false,
+      });
+    });
+
     it('redacts contact patterns from staff notes and rejects empty results', async () => {
       prismaMock.helpRequest.findUnique.mockResolvedValue(accessRecord());
       await service.addNote('case-1', { note: 'Call 0712345678 for update' }, responder);
@@ -235,6 +325,24 @@ describe('HelpRequestsService', () => {
         service.updateStatus('case-1', HelpRequestStatus.IN_PROGRESS, responder),
       ).rejects.toThrow(/Illegal case transition/);
       expect(prismaMock.helpRequest.update).not.toHaveBeenCalled();
+    });
+
+    it('clears contact and consented coordinates when a case is closed', async () => {
+      prismaMock.helpRequest.findUnique.mockResolvedValue(
+        accessRecord({ status: HelpRequestStatus.RESOLVED, assignedResponderId: 'responder-1' }),
+      );
+      await service.updateStatus('case-1', HelpRequestStatus.CLOSED, responder);
+      const update = prismaMock.helpRequest.update.mock.calls[0][0];
+      expect(update.data).toMatchObject({
+        status: HelpRequestStatus.CLOSED,
+        contactCiphertext: null,
+        contactHash: null,
+        consentToContact: false,
+        latitude: null,
+        longitude: null,
+        locationConsentGiven: false,
+      });
+      expect(update.data.closedAt).toBeInstanceOf(Date);
     });
 
     it('returns a minimized single-case view without contact identifiers', async () => {
@@ -422,7 +530,7 @@ describe('HelpRequestsService', () => {
   });
 
   describe('retention', () => {
-    it('expires old open cases and wipes contact details without contacting anyone', async () => {
+    it('expires old open cases and wipes contact/location details without contacting anyone', async () => {
       process.env.CASE_RETENTION_HOURS = '168';
       prismaMock.helpRequest.findMany.mockResolvedValue([{ id: 'old-1' }]);
       await expect(service.sweepExpired()).resolves.toEqual({ expired: 1 });
@@ -431,6 +539,9 @@ describe('HelpRequestsService', () => {
       expect(update.data.contactHash).toBeNull();
       expect(update.data.contactCiphertext).toBeNull();
       expect(update.data.concernSummary).toBeNull();
+      expect(update.data.latitude).toBeNull();
+      expect(update.data.longitude).toBeNull();
+      expect(update.data.locationConsentGiven).toBe(false);
       expect(auditMock.record).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'CASE_EXPIRED_RETENTION' }),
       );

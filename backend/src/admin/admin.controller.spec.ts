@@ -33,11 +33,17 @@ describe('AdminController user access', () => {
     authenticate: jest.fn(async (authorization?: string) => {
       if (!authorization?.startsWith('Bearer ')) throw new UnauthorizedException();
       const token = authorization.slice(7);
-      const isAdmin = token === 'super-admin-token' || token === 'ordinary-admin-token';
+      // Mirrors JwtStrategy: the role comes from the database, not the email.
+      // A super administrator must actually carry the SUPER_ADMIN role.
+      const roles: Record<string, UserRole> = {
+        'super-admin-token': UserRole.SUPER_ADMIN,
+        'ordinary-admin-token': UserRole.ADMIN,
+      };
+      const role = roles[token] ?? UserRole.RESPONDER;
       return {
         id: 'admin-1',
         email: token === 'super-admin-token' ? 'wilbardmagaso777@gmail.com' : 'admin@example.org',
-        role: isAdmin ? UserRole.ADMIN : UserRole.RESPONDER,
+        role,
       };
     }),
   };

@@ -19,6 +19,21 @@ export const AI_KNOWLEDGE_MANAGEMENT_ROLES: UserRole[] = [
 
 export const AUDIT_READ_ROLES: UserRole[] = [...ADMIN_ROLES, UserRole.AUDITOR];
 
+/** Any role beyond a plain user or responder carries elevated permissions. */
+export const PRIVILEGED_ROLES: UserRole[] = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.CONTENT_REVIEWER,
+  UserRole.CONTENT_MANAGER,
+  UserRole.SERVICE_MANAGER,
+  UserRole.AUDITOR,
+  UserRole.PARTNER_ANALYST,
+];
+
+export function isPrivilegedRole(role?: string | null): boolean {
+  return PRIVILEGED_ROLES.includes(role as UserRole);
+}
+
 export function isAdminRole(role?: string | null): boolean {
   return ADMIN_ROLES.includes(role as UserRole);
 }

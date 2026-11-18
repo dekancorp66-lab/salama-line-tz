@@ -132,6 +132,39 @@ describe('HelpRequestsController Phase 4 routes', () => {
     expect(data.concernSummary).not.toMatch(/0712345678|Amina/);
   });
 
+  it('accepts a validated structured region-district pair and rejects mismatches', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/help-requests')
+      .send({
+        topic: 'school concern',
+        regionId: 'mbeya',
+        districtId: 'mbeya-mbeya-city',
+        channel: 'WEB',
+        consentToContact: false,
+      })
+      .expect(201);
+    expect(prismaMock.helpRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          districtCode: 'MBEYA-MBEYA-CITY',
+          regionId: 'mbeya',
+          districtId: 'mbeya-mbeya-city',
+        }),
+      }),
+    );
+
+    await request(app.getHttpServer())
+      .post('/api/v1/help-requests')
+      .send({
+        topic: 'school concern',
+        regionId: 'mbeya',
+        districtId: 'arusha-arusha-city',
+        channel: 'WEB',
+        consentToContact: false,
+      })
+      .expect(400);
+  });
+
   it('rejects unauthenticated case access', async () => {
     await request(app.getHttpServer()).get('/api/v1/help-requests').expect(401);
     await request(app.getHttpServer()).get('/api/v1/help-requests/case-1').expect(401);
@@ -142,12 +175,19 @@ describe('HelpRequestsController Phase 4 routes', () => {
   });
 
   it('scopes the list query to the responders district', async () => {
+    prismaMock.helpRequest.findMany.mockResolvedValue([
+      { id: 'c1', districtCode: 'MBEYA', status: HelpRequestStatus.PENDING },
+      { id: 'c2', districtCode: 'DAR', status: HelpRequestStatus.PENDING },
+    ]);
     await request(app.getHttpServer())
       .get('/api/v1/help-requests')
       .set('Authorization', 'Bearer mbeya-token')
-      .expect(200);
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual([expect.objectContaining({ id: 'c1' })]);
+      });
     const call = prismaMock.helpRequest.findMany.mock.calls[0][0];
-    expect(call.where.districtCode).toBe('MBEYA');
+    expect(call.where.districtCode).toBeUndefined();
   });
 
   it('denies cross-district access on the single-case endpoint', async () => {

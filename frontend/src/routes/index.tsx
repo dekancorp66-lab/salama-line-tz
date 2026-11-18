@@ -1,415 +1,292 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Simulator } from "@/components/simulator";
-import { LogoMarquee } from "@/components/logo-marquee";
 import {
+  ArrowRight,
+  BookOpen,
   Check,
-  Menu,
-  X,
   ChevronDown,
-  Shield,
-  Smartphone,
-  MessageCircle,
-  HeartPulse,
+  HeartHandshake,
   Lock,
-  Users,
+  MapPin,
+  Search,
+  Shield,
 } from "lucide-react";
+import { LogoMarquee } from "@/components/logo-marquee.tsx";
+import { PublicHeader } from "@/components/public-header.tsx";
+import { en } from "@/i18n/en.ts";
+import { useI18n, usePageMeta } from "@/i18n/provider.tsx";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: en.meta.homeTitle },
+      { name: "description", content: en.meta.homeDescription },
+    ],
+  }),
+  component: Home,
+});
 
-const nav = [
-  { href: "#top", label: "Home" },
-  { href: "#how", label: "How it works" },
-  { href: "#features", label: "What it covers" },
-  { href: "#safety", label: "Safety" },
-  { href: "#faq", label: "FAQs" },
-];
+const HERO_IMAGES = [
+  "/image/home%20/Maasai%20women.jpeg",
+  "/image/home%20/_%20%281%29.jpeg",
+  "/image/home%20/_%20%282%29.jpeg",
+  "/image/home%20/_.jpeg",
+  "/image/home%20/black.jpg",
+  "/image/home%20/so%20fearfully%20%26%20wonderfully%20made.jpeg",
+  "/image/home%20/%F0%9F%92%99%F0%9F%92%99%F0%9F%92%99.jpeg",
+] as const;
 
-const faqs = [
-  {
-    q: "Who can use SalamaLine?",
-    a: "Girls and young people first. Parents, teachers and neighbours can raise an anonymous concern. Trained responders and partner organisations use it to act and to see aggregated trends.",
-  },
-  {
-    q: "Does she need a smartphone or data?",
-    a: "No. USSD and SMS work on any basic phone with no internet. WhatsApp is there when she has data. Every service has a text-only path.",
-  },
-  {
-    q: "Is her name stored?",
-    a: "No names, ages, message text or raw phone numbers are stored. Numbers are hashed, or encrypted only with consent for an open help request, and wiped when the case closes.",
-  },
-  {
-    q: "Will it call the police or her family?",
-    a: "Never by itself. A trained human is always behind a request for help. She gives consent before anyone is contacted. Declining never blocks information or the helpline.",
-  },
-  {
-    q: "Does it give medical or legal advice?",
-    a: "No. SalamaLine only shares content professionals have approved — source, reviewer and review date are recorded. It does not invent answers.",
-  },
-  {
-    q: "Where does the pilot run?",
-    a: "Selected communities and schools in Mbeya Region, Tanzania, with a smaller partner-led FGM module in a higher-prevalence district. Built by signiAI at Mbeya University of Science and Technology.",
-  },
-];
-
-function Home() {
-  const [open, setOpen] = useState(false);
-  const [faq, setFaq] = useState<number | null>(0);
-  const [active, setActive] = useState("#top");
+function HeroSlideshow() {
+  const [index, setIndex] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => {
-      let current = "#top";
-      for (const l of nav) {
-        if (l.href === "#top") continue;
-        const el = document.querySelector(l.href);
-        if (el && el.getBoundingClientRect().top <= 140) current = l.href;
-      }
-      setActive(current);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    HERO_IMAGES.forEach((src) => {
+      const img = new window.Image();
+      img.decoding = "async";
+      img.src = src;
+    });
   }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduceMotion(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const id = window.setInterval(() => {
+      setIndex((i) => (i + 1) % HERO_IMAGES.length);
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [reduceMotion]);
+
+  return (
+    <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true">
+      {HERO_IMAGES.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          className={`absolute inset-0 h-full w-full object-cover object-[center_30%] transition-opacity duration-1000 ease-in-out motion-reduce:duration-0 ${
+            i === (reduceMotion ? 0 : index) ? "opacity-100" : "opacity-0"
+          }`}
+          loading={i === 0 ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={i === 0 ? "high" : "low"}
+          draggable={false}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Home() {
+  const { t, dictionary } = useI18n();
+  usePageMeta("home");
+  const [faq, setFaq] = useState<number | null>(0);
+
+  const faqs = [
+    { q: dictionary.home.faq1Q, a: dictionary.home.faq1A },
+    { q: dictionary.home.faq2Q, a: dictionary.home.faq2A },
+    { q: dictionary.home.faq3Q, a: dictionary.home.faq3A },
+    { q: dictionary.home.faq4Q, a: dictionary.home.faq4A },
+    { q: dictionary.home.faq5Q, a: dictionary.home.faq5A },
+  ];
+
+  const offers = [
+    {
+      icon: BookOpen,
+      title: dictionary.home.learnTitle,
+      text: dictionary.home.learnText,
+      href: "/ai",
+      link: t("common.aiAssistance"),
+    },
+    {
+      icon: MapPin,
+      title: dictionary.home.nearbyTitle,
+      text: dictionary.home.nearbyText,
+      href: "/services",
+      link: t("common.verifiedServices"),
+    },
+    {
+      icon: HeartHandshake,
+      title: dictionary.home.requestTitle,
+      text: dictionary.home.requestText,
+      href: "/report",
+      link: t("common.getHelp"),
+    },
+  ];
+
+  const steps = [
+    ["1", dictionary.home.step1Title, dictionary.home.step1Text],
+    ["2", dictionary.home.step2Title, dictionary.home.step2Text],
+    ["3", dictionary.home.step3Title, dictionary.home.step3Text],
+  ] as const;
+
+  const safety = [
+    t("home.safety1"),
+    t("home.safety2"),
+    t("home.safety3"),
+    t("home.safety4"),
+  ];
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="fixed inset-x-0 top-3 z-40 px-3 md:top-4 md:px-5">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex min-h-14 items-center justify-between gap-3 rounded-full border border-line/80 bg-paper/95 pl-5 pr-2 text-ink shadow-[var(--shadow-soft)] backdrop-blur-xl md:min-h-16 md:pl-7">
-            <a href="#top" className="brand-text shrink-0 text-lg font-semibold tracking-tight md:text-xl">
-              salamaline
-            </a>
-            <nav aria-label="Main navigation" className="hidden items-center gap-1 md:flex">
-              {nav.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  aria-current={active === l.href ? "location" : undefined}
-                  className={
-                    "rounded-full px-3.5 py-2 text-sm font-medium text-pink transition-colors " +
-                    (active === l.href
-                      ? "bg-pink font-semibold text-white"
-                      : "hover:bg-pink-soft")
-                  }
-                >
-                  {l.label}
-                </a>
-              ))}
-              <a href="/help" className="rounded-full px-3.5 py-2 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
-                Get help
-              </a>
-              <a href="/officers" className="rounded-full px-3.5 py-2 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
-                Officers
-              </a>
-              <a href="/ai" className="rounded-full px-3.5 py-2 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
-                AI Assistant
-              </a>
-            </nav>
-            <div className="flex items-center gap-2">
-              <a
-                href="#partner"
-                className="hidden rounded-full border border-line px-4 py-2 text-sm font-medium text-ink transition hover:border-pink-line hover:bg-pink-soft lg:inline"
-              >
-                Partner
-              </a>
-              <a
-                href="#partner"
-                className="brand-fill hidden rounded-full px-4 py-2 text-sm font-semibold text-white sm:inline"
-              >
-                Get involved
-              </a>
-              <button
-                className="grid h-10 w-10 place-items-center rounded-full bg-pink-soft text-pink ring-1 ring-pink-line transition hover:bg-pink hover:text-white md:hidden"
-                aria-label={open ? "Close menu" : "Open menu"}
-                onClick={() => setOpen((v) => !v)}
-              >
-                {open ? <X size={18} /> : <Menu size={18} />}
-              </button>
-            </div>
-          </div>
-          {open && (
-            <div className="mt-2 rounded-3xl border border-line bg-paper p-3 text-ink shadow-[var(--shadow-panel)] md:hidden">
-              {nav.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  aria-current={active === l.href ? "location" : undefined}
-                  className={`block rounded-2xl px-4 py-3 text-sm text-pink transition ${active === l.href ? "bg-pink font-semibold text-white" : "font-medium hover:bg-pink-soft"}`}
-                >
-                  {l.label}
-                </a>
-              ))}
-              <a href="/help" onClick={() => setOpen(false)} className="my-2 block rounded-2xl px-4 py-3 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
-                Get help privately
-              </a>
-              <a href="/officers" onClick={() => setOpen(false)} className="my-2 block rounded-2xl px-4 py-3 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
-                Officer workspace
-              </a>
-              <a href="/ai" onClick={() => setOpen(false)} className="my-2 block rounded-2xl px-4 py-3 text-sm font-semibold text-pink transition-colors hover:bg-pink-soft">
-                SalamaLine AI Assistant
-              </a>
-              <a
-                href="#partner"
-                onClick={() => setOpen(false)}
-                className="mb-2 mt-2 block rounded-full border border-pink-line bg-pink-soft px-4 py-3 text-center text-sm font-semibold text-pink transition hover:bg-pink-line"
-              >
-                Get involved
-              </a>
-            </div>
-          )}
-        </div>
-      </header>
+      <PublicHeader current="/" />
 
       <main id="top">
-        <section className="relative isolate min-h-svh w-full overflow-hidden bg-invert text-paper">
-          <video
-            src="/hero.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster="/hero.jpg"
-            aria-hidden
-            className="absolute inset-0 -z-10 h-full w-full object-cover object-[center_22%]"
-          />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-invert/90 via-invert/45 to-invert/15 md:bg-gradient-to-r md:from-invert/80 md:via-invert/35 md:to-transparent" />
-          <div className="mx-auto flex min-h-svh max-w-6xl flex-col justify-end px-4 pb-44 pt-32 sm:px-6 md:justify-center md:pb-40 md:pt-20">
-            <div className="max-w-xl">
-              <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3.5 py-2 text-sm font-medium text-white/95 backdrop-blur-sm">
-                <Check size={16} className="text-white" /> Free · confidential · any phone
-              </p>
-              <h1 className="max-w-[12ch] text-5xl font-semibold leading-[1.04] tracking-tight text-white sm:text-6xl md:text-7xl">
-                Your new safety line
-              </h1>
-              <p className="mt-5 max-w-lg text-base leading-relaxed text-white/90 md:text-lg">
-                Girls get accurate information, nearby verified services, and a trained person — from a basic phone. Free.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href="/help" className="brand-fill inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">
-                  Ask for help privately
-                </a>
-                <a
-                  href="#how"
-                  className="inline-flex min-h-12 items-center rounded-full border border-white/45 bg-black/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
-                >
-                  See how it works
-                </a>
-              </div>
+        <section className="relative isolate flex min-h-[92svh] w-full flex-col justify-end overflow-hidden bg-neutral-950 px-4 pb-14 pt-36 text-white md:px-6 md:pb-16 md:pt-48">
+          <HeroSlideshow />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/90 via-black/55 to-black/25 md:bg-gradient-to-r md:from-black/85 md:via-black/40 md:to-transparent" />
+          <div className="relative mx-auto w-full max-w-6xl">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/25 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-sm md:text-sm">
+              <Check size={15} /> {t("home.badge")}
+            </p>
+            <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-white md:text-6xl">
+              {t("home.heroTitle")}
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-white/90 md:text-lg">
+              {t("home.heroDescription")}
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <a
+                href="/report"
+                className="brand-fill inline-flex min-h-12 items-center gap-2 rounded-full px-7 py-3 text-sm font-semibold text-white"
+              >
+                {t("home.heroPrimary")} <ArrowRight size={17} />
+              </a>
+              <a
+                href="/track"
+                className="inline-flex min-h-12 items-center rounded-full border border-white/45 bg-black/20 px-7 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15"
+              >
+                {t("home.heroSecondary")}
+              </a>
             </div>
+            <p className="mt-6 flex items-start gap-2 text-sm text-white/85">
+              <Shield size={17} className="mt-0.5 shrink-0 text-pink-300" />
+              {t("home.heroAssurance")}
+            </p>
           </div>
-          <div className="absolute inset-x-0 bottom-0 pb-6 md:pb-8">
-            <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-paper/75 sm:text-[11px]">
-              Organisations working to keep girls and women safe in Tanzania
+          <div className="relative mx-auto mt-14 w-full max-w-6xl">
+            <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-white/75 sm:text-[11px]">
+              {t("home.organizationsCaption")}
             </p>
             <LogoMarquee />
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-center text-xs font-semibold">
+              <a href="/organizations" className="text-white underline-offset-4 hover:underline">
+                {t("home.organizationsLink")}
+              </a>
+              <a href="/ussd" className="text-white underline-offset-4 hover:underline">
+                {t("home.ussdLink")}
+              </a>
+            </div>
           </div>
         </section>
 
-        <section aria-label="Who built SalamaLine" className="mx-auto max-w-6xl px-4 py-12 text-center md:px-6 md:py-16">
-          <p className="mx-auto inline-flex max-w-3xl items-center justify-center gap-2 text-sm font-medium leading-relaxed text-ink md:text-base">
-            <Shield size={18} className="text-pink" />
-            Built in Mbeya, Tanzania, by signiAI at Mbeya University of Science and Technology
-          </p>
-        </section>
-
-        <section aria-label="SalamaLine at a glance" className="mx-auto grid max-w-6xl grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-panel)] border border-line bg-line px-4 py-3 shadow-sm md:grid-cols-4 md:px-6">
-          {[
-            ["Any phone", "USSD, SMS and WhatsApp"],
-            ["No names stored", "Consent before any contact"],
-            ["Human in the loop", "A trained responder, always"],
-            ["Swahili first", "English from day one"],
-          ].map(([k, v]) => (
-            <div key={k} className="bg-paper px-3 py-5 md:px-6 md:py-6">
-              <p className="text-lg font-semibold tracking-tight text-ink">{k}</p>
-              <p className="mt-1 text-sm text-muted">{v}</p>
-            </div>
-          ))}
-        </section>
-
-        <section id="how" className="section-space scroll-mt-24 mx-auto max-w-6xl px-4 md:px-6">
-          <p className="text-sm font-medium text-pink">How it works</p>
-          <h2 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-5xl">
-            It starts with a short code, then a real person.
+        <section
+          aria-label={t("home.offersLabel")}
+          className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-24"
+        >
+          <h2 className="text-2xl font-semibold tracking-tight md:text-4xl">
+            {t("home.offersTitle")}
           </h2>
-          <div className="mt-12 grid gap-4 md:grid-cols-4">
-            {[
-              ["1", "She reaches out", "Dial a short code, text a command, or message on WhatsApp. No app. No data required."],
-              ["2", "Clear information", "Short answers on child marriage, FGM, rights and health — only from an approved content bank."],
-              ["3", "Nearby services", "Verified clinics, legal aid and social welfare offices by district, sent by SMS."],
-              ["4", "Help, with consent", "A trained responder is alerted. If nobody replies, the alert repeats, then escalates."],
-            ].map(([n, t, d]) => (
-              <article key={n} className="rounded-[var(--radius-card)] border border-line bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]">
-                <p className="inline-grid h-8 w-8 place-items-center rounded-full bg-pink-soft text-sm font-semibold text-pink">{n}</p>
-                <h3 className="mt-6 text-xl font-semibold leading-snug tracking-tight">{t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{d}</p>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted md:text-base">
+            {t("home.offersIntro")}
+          </p>
+          <div className="mt-9 grid gap-4 md:grid-cols-3">
+            {offers.map(({ icon: Icon, title, text, href, link }) => (
+              <article
+                key={href}
+                className="rounded-[var(--radius-card)] border border-line bg-paper p-6 shadow-sm"
+              >
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-pink-soft text-pink">
+                  <Icon size={20} />
+                </span>
+                <h3 className="mt-5 text-xl font-semibold tracking-tight">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{text}</p>
+                <a
+                  href={href}
+                  className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-pink hover:underline"
+                >
+                  {link} <ArrowRight size={15} />
+                </a>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="features" className="scroll-mt-24 border-y border-line bg-soft">
-          <div className="section-space mx-auto grid max-w-6xl items-center gap-10 px-4 md:grid-cols-2 md:px-6">
+        <section className="border-y border-line bg-soft">
+          <div className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-24">
+            <h2 className="text-2xl font-semibold tracking-tight md:text-4xl">
+              {t("home.howTitle")}
+            </h2>
+            <div className="mt-9 grid gap-6 md:grid-cols-3">
+              {steps.map(([n, title, text]) => (
+                <div key={n}>
+                  <p className="grid h-9 w-9 place-items-center rounded-full bg-pink-soft text-sm font-semibold text-pink">
+                    {n}
+                  </p>
+                  <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{text}</p>
+                </div>
+              ))}
+            </div>
+            <a
+              href="/track"
+              className="mt-9 inline-flex min-h-11 items-center gap-2 rounded-full border border-pink-line bg-paper px-6 py-2.5 text-sm font-semibold text-pink transition hover:bg-pink-soft"
+            >
+              <Search size={16} /> {t("home.trackPrompt")}
+            </a>
+          </div>
+        </section>
+
+        <section id="safety" className="scroll-mt-24 px-4 py-16 md:py-24">
+          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[1fr_1.2fr] md:px-6">
             <div>
-              <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">
-                Reach girls that apps miss
-              </h2>
-              <p className="mt-4 max-w-md text-muted">
-                A 26% mobile internet gender gap leaves 230 million women offline. SalamaLine is USSD and SMS first, with a text-only path for every service.
+              <p className="flex items-center gap-2 text-sm font-semibold text-pink">
+                <Lock size={17} /> {t("home.safetyTitle")}
               </p>
-              <ul className="mt-8 space-y-3 text-sm">
-                {[
-                  ["SALAMA", "open the menu"],
-                  ["KLINIKI + district", "find a clinic"],
-                  ["MSAADA + district", "ask for help"],
-                  ["RIPOTI + district", "raise an anonymous concern"],
-                  ["FUTA", "delete my data"],
-                ].map(([c, d]) => (
-                  <li key={c} className="flex items-baseline gap-3">
-                    <span className="rounded-full bg-pink px-3 py-1 font-mono text-xs text-paper">{c}</span>
-                    <span className="text-muted">{d}</span>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-4xl">
+                {t("home.safetyHeading")}
+              </h2>
+            </div>
+            <div className="rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-6 text-sm leading-relaxed text-ink md:p-8">
+              <ul className="space-y-3">
+                {safety.map((line) => (
+                  <li key={line} className="flex gap-3">
+                    <Check size={16} className="mt-0.5 shrink-0 text-pink" />{" "}
+                    <span>{line}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <Simulator />
-          </div>
-        </section>
-
-        <section className="section-space mx-auto max-w-6xl px-4 md:px-6">
-          <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-5xl">
-            Information, referral and a person — in one flow
-          </h2>
-          <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {[
-              [Shield, "Child marriage", "Harms, rights, a consent-based help request, and anonymous reports from a teacher or neighbour."],
-              [HeartPulse, "FGM care", "Urgent request if she fears cutting. Care and counselling if she was already cut — with no alert unless she asks."],
-              [MessageCircle, "Digital safety", "Image abuse, sextortion and harassment: how to report, in plain language."],
-              [Users, "Community", "Champions get risk-season notices before school holidays. Partners see only aggregated trends."],
-              [Lock, "Privacy controls", "Quick exit, delete-my-data, neutral wording so a phone screen reveals nothing."],
-              [Smartphone, "Wellbeing", "A gentle check-in. Tips if she is okay. A counsellor if she agrees. Nothing she answers is stored."],
-            ].map(([Icon, t, d]) => (
-              <article key={t as string} className="rounded-[var(--radius-card)] border border-line bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-pink-soft text-pink"><Icon size={20} /></span>
-                <h3 className="mt-8 text-lg font-semibold">{t as string}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{d as string}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="safety" className="scroll-mt-24 bg-invert text-paper">
-          <div className="mx-auto max-w-6xl px-4 py-20 md:px-6">
-            <p className="text-sm font-semibold text-pink-line">Safety, privacy and ethics</p>
-            <h2 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight md:text-5xl">
-              Designed so she can trust it
-            </h2>
-            <div className="mt-12 grid gap-8 md:grid-cols-2">
-              {[
-                ["Minimal data", "No names, ages or message text. A number is stored only as a one-way hash, or encrypted with consent, and wiped at closure."],
-                ["Consent first", "A responder receives a number only when she agrees. Saying no never blocks the helpline or services."],
-                ["Human in the loop", "The system routes. It does not decide, diagnose or report on its own. It never contacts police or family by itself."],
-                ["Approved content only", "No free-form AI answers. Every answer has a source, a reviewer and a review date."],
-                ["Honest about limits", "Anonymous reports are not stored with a number, but a mobile operator may still see traffic. Users are told this plainly."],
-                ["Safeguarded responders", "Vetted, trained, and bound by confidentiality and child-protection codes. Independent review before any pilot."],
-              ].map(([t, d]) => (
-                <div key={t} className="border-t border-paper/15 pt-5">
-                  <h3 className="text-lg font-semibold">{t}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-paper/70">{d}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section-space mx-auto max-w-6xl px-4 md:px-6">
-          <p className="text-sm text-muted">What using it feels like</p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {[
-              ["Amina, 15", "She hears her family is planning her marriage. She dials the short code, chooses help, picks her district and agrees to be contacted. A responder helps her reach social welfare."],
-              ["A teacher", "She texts RIPOTI and the district. A responder is alerted with no information about who sent it, then verifies the concern through the community protocol."],
-              ["A responder", "She replies ACK with the case code, confirms it is safe to talk, and does not contact the family without a safety plan. CLOSE wipes the girl’s details."],
-            ].map(([t, d]) => (
-              <article key={t} className="rounded-[var(--radius-card)] border border-line bg-wash p-6">
-                <h3 className="text-lg font-semibold">{t}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">{d}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="border-y border-line">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-3 md:px-6">
-            {[
-              ["1 in 3", "girls married before 18"],
-              ["6 in 7", "new adolescent HIV infections are girls"],
-              ["230M", "women left offline by the mobile gender gap"],
-            ].map(([n, l]) => (
-              <div key={n}>
-                <p className="brand-text text-5xl font-semibold tracking-tight md:text-6xl">{n}</p>
-                <p className="mt-2 text-sm text-muted">{l}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="partner" className="section-space scroll-mt-24 mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid items-start gap-10 rounded-[var(--radius-panel)] border border-line bg-wash p-6 shadow-sm md:grid-cols-2 md:p-12">
-            <div>
-              <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">Free for every girl</h2>
-              <p className="mt-4 text-muted">
-                Built by signiAI at Mbeya University of Science and Technology, led by Jofrey Nasson. The platform handles USSD, SMS and WhatsApp, referrals, consent-based help requests, FGM, wellbeing, escalation and a partner dashboard. Content and service listings are placeholders until professionals and partners approve them.
-              </p>
-              <a href="mailto:hello@salamaline.org" className="brand-fill mt-8 inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">
-                Become a partner
-              </a>
-            </div>
-            <ul className="space-y-3 text-sm">
-              {[
-                "USSD, SMS and WhatsApp",
-                "Approved information only",
-                "District service directory",
-                "Consent-based help requests",
-                "Anonymous community reports",
-                "Open source, ready to adapt",
-                "12-month pilot in Mbeya Region",
-                "Independent safeguarding review",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3 border-b border-line pb-3">
-                  <Check size={16} className="text-pink" /> {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 pb-8 md:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-5 rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-sm md:p-8">
-            <div className="max-w-xl">
-              <p className="text-sm font-medium text-pink">For the people who answer</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">A workspace for trained officers</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted">Responders review district cases, record redacted notes and consent decisions, and escalate for human review. Administrators manage staff, verified services and approved information.</p>
-            </div>
-            <a href="/officers" className="brand-fill inline-flex min-h-12 items-center rounded-full px-6 py-3 text-sm font-semibold text-white">Open officer workspace</a>
           </div>
         </section>
 
         <section id="faq" className="scroll-mt-24 mx-auto max-w-3xl px-4 pb-20 md:px-6">
-          <h2 className="text-3xl font-semibold tracking-tight">Questions</h2>
+          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            {t("home.faqTitle")}
+          </h2>
           <div className="mt-6 divide-y divide-line border-y border-line">
             {faqs.map((item, i) => {
               const on = faq === i;
               return (
-                <div key={item.q}>
+                <div key={i}>
                   <button
+                    type="button"
                     className="flex w-full items-center justify-between gap-4 py-5 text-left text-base font-medium transition-colors hover:text-pink"
                     aria-expanded={on}
                     onClick={() => setFaq(on ? null : i)}
                   >
                     {item.q}
-                    <ChevronDown size={18} className={`shrink-0 transition-transform ${on ? "rotate-180 text-pink" : "text-muted"}`} />
+                    <ChevronDown
+                      size={18}
+                      className={`shrink-0 transition-transform ${on ? "rotate-180 text-pink" : "text-muted"}`}
+                    />
                   </button>
                   {on && <p className="pb-5 text-sm leading-relaxed text-muted">{item.a}</p>}
                 </div>
@@ -420,13 +297,31 @@ function Home() {
       </main>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-6">
-          <p className="brand-text font-semibold">salamaline</p>
-          <p>Confidential line for girls’ safety and wellbeing · signiAI, MUST, Tanzania</p>
-          <div className="flex gap-5">
-            <a href="#safety" className="hover:text-ink">Privacy</a>
-            <a href="#faq" className="hover:text-ink">FAQs</a>
-            <a href="#partner" className="hover:text-ink">Partners</a>
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-10 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-6">
+          <p className="brand-text font-semibold">{t("common.salamaLine")}</p>
+          <p>{t("home.footerCredit")}</p>
+          <div className="flex flex-wrap gap-5">
+            <a href="/report" className="hover:text-ink">
+              {t("common.getHelp")}
+            </a>
+            <a href="/ai" className="hover:text-ink">
+              {t("common.aiAssistance")}
+            </a>
+            <a href="/services" className="hover:text-ink">
+              {t("common.services")}
+            </a>
+            <a href="/organizations" className="hover:text-ink">
+              {t("common.organizations")}
+            </a>
+            <a href="/ussd" className="hover:text-ink">
+              {t("common.ussd")}
+            </a>
+            <a href="/track" className="hover:text-ink">
+              {t("common.track")}
+            </a>
+            <a href="#safety" className="hover:text-ink">
+              {t("home.footerPrivacy")}
+            </a>
           </div>
         </div>
       </footer>

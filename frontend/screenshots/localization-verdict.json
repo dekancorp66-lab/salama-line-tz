@@ -1,0 +1,93 @@
+{
+  "ok": true,
+  "baseUrl": "http://127.0.0.1:8080",
+  "checks": {
+    "defaultEnglish": true,
+    "switchToKiswahili": true,
+    "reloadPersistence": true,
+    "publicRoutes": [
+      "/",
+      "/help",
+      "/ai",
+      "/services",
+      "/track"
+    ],
+    "institutionalPortal": true,
+    "mobileOverflow": [
+      {
+        "language": "sw",
+        "path": "/",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "sw",
+        "path": "/help",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "sw",
+        "path": "/ai",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "sw",
+        "path": "/services",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "sw",
+        "path": "/track",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "sw",
+        "path": "/institutions",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "en",
+        "path": "/",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "en",
+        "path": "/help",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "en",
+        "path": "/ai",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "en",
+        "path": "/services",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "en",
+        "path": "/track",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      },
+      {
+        "language": "en",
+        "path": "/institutions",
+        "scrollWidth": 390,
+        "innerWidth": 390
+      }
+    ]
+  },
+  "consoleErrors": [],
+  "pageErrors": []
+}

@@ -16,6 +16,31 @@
 
 The response returns a random case code. The API does not send an alert yet. A real deployment must have a staffed queue and verified notification adapter.
 
+## Track a case (public)
+
+`GET /api/v1/case-tracking/{caseCode}`
+
+Example: `GET /api/v1/case-tracking/SL-CC723587`
+
+No account or bearer token is required. The reference is the `caseCode` printed on the submission receipt (for example `SL-CC723587`); internal database IDs are not accepted and are rejected with `400`. The endpoint is rate limited to 8 lookups per minute.
+
+The response contains only public progress information:
+
+```json
+{
+  "caseCode": "SL-CC723587",
+  "submittedAt": "2026-11-17T18:48:16.353Z",
+  "status": "RECEIVED",
+  "lastUpdatedAt": "2026-11-17T18:50:42.591Z",
+  "progressUpdates": [
+    { "label": "Help request received", "at": "2026-11-17T18:48:16.353Z" }
+  ],
+  "needsMoreInformation": false
+}
+```
+
+It never returns case details, contact information, district, officer identities, notes, referrals, or safeguarding records. `404` means the reference was not found. This tracker does not contact emergency services.
+
 ## List approved content
 
 `GET /api/v1/content?language=sw`
