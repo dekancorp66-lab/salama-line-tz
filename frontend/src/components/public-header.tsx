@@ -70,7 +70,7 @@ export function PublicHeader({ current }: { current: string }) {
           </a>
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-full bg-pink-soft text-pink ring-1 ring-pink-line transition hover:bg-pink hover:text-white xl:hidden"
+            className="grid h-10 w-10 place-items-center rounded-full bg-pink-soft text-pink ring-1 ring-pink-line transition hover:bg-brand-fill hover:text-white xl:hidden"
             aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
             aria-expanded={open}
             onClick={() => setOpen((value) => !value)}

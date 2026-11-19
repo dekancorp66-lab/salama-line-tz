@@ -84,31 +84,31 @@ export function Simulator() {
   return (
     <div className="mx-auto w-full max-w-sm space-y-3">
       <div className="rounded-[36px] border border-line bg-paper p-3 shadow-sm">
-        <div className="rounded-[28px] bg-invert p-4 text-paper">
-          <div role="tablist" className="flex gap-1 rounded-full bg-paper/10 p-1 text-xs">
+        <div className="rounded-[28px] bg-invert p-4 text-on-dark">
+          <div role="tablist" className="flex gap-1 rounded-full bg-on-dark/10 p-1 text-xs">
             {TAB_IDS.map((tabId) => (
               <button key={tabId} role="tab" aria-selected={tab === tabId} onClick={() => setTab(tabId)}
-                className={`min-h-9 flex-1 rounded-full px-2 py-1.5 font-medium transition ${tab === tabId ? "bg-pink text-white" : "text-paper/70 hover:bg-paper/10 hover:text-white"}`}>
+                className={`min-h-9 flex-1 rounded-full px-2 py-1.5 font-medium transition ${tab === tabId ? "bg-brand-fill text-white" : "text-on-dark/80 hover:bg-on-dark/10 hover:text-white"}`}>
                 {t(TAB_LABELS[tabId])}
               </button>
             ))}
           </div>
 
-          <div className="mt-3 h-72 overflow-y-auto rounded-2xl bg-paper/5 p-3 font-mono text-sm leading-6 text-paper/90" aria-live="polite">
+          <div className="mt-3 h-72 overflow-y-auto rounded-2xl bg-on-dark/5 p-3 font-mono text-sm leading-6 text-on-dark/95" aria-live="polite">
             {tab === "ussd" ? (
               screen == null ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-center font-sans">
-                  <p className="text-paper/60">{t("simulator.tryLive")}</p>
-                  <button onClick={() => ussd([])} disabled={busy} className="brand-fill rounded-full px-5 py-2 text-sm font-semibold text-paper">{t("simulator.dial")}</button>
+                  <p className="text-on-dark/75">{t("simulator.tryLive")}</p>
+                  <button onClick={() => ussd([])} disabled={busy} className="brand-fill rounded-full px-5 py-2 text-sm font-semibold text-white">{t("simulator.dial")}</button>
                 </div>
-              ) : (<><p className="whitespace-pre-wrap">{screen}</p>{ended && <p className="mt-2 text-paper/50">{t("simulator.sessionEnded")}</p>}</>)
+              ) : (<><p className="whitespace-pre-wrap">{screen}</p>{ended && <p className="mt-2 text-on-dark/70">{t("simulator.sessionEnded")}</p>}</>)
             ) : (
               <>
-                {tab === "responder" && box.responder.length === 0 && <p className="font-sans text-paper/50">{t("simulator.responderEmpty")}</p>}
-                {tab === "focal" && box.focal.length === 0 && <p className="font-sans text-paper/50">{t("simulator.focalEmpty")}</p>}
-                {tab === "girl" && box.girl.length === 0 && <p className="font-sans text-paper/50">{t("simulator.girlEmpty")}</p>}
+                {tab === "responder" && box.responder.length === 0 && <p className="font-sans text-on-dark/70">{t("simulator.responderEmpty")}</p>}
+                {tab === "focal" && box.focal.length === 0 && <p className="font-sans text-on-dark/70">{t("simulator.focalEmpty")}</p>}
+                {tab === "girl" && box.girl.length === 0 && <p className="font-sans text-on-dark/70">{t("simulator.girlEmpty")}</p>}
                 {box[role].map((m, i) => (
-                  <p key={i} className={`my-1 whitespace-pre-wrap rounded-xl px-3 py-1.5 ${m.me ? "ml-8 bg-pink/80 text-paper" : "mr-8 bg-paper/10"}`}>{m.text}</p>
+                  <p key={i} className={`my-1 whitespace-pre-wrap rounded-xl px-3 py-1.5 ${m.me ? "ml-8 bg-brand-fill text-white" : "mr-8 bg-on-dark/10 text-on-dark"}`}>{m.text}</p>
                 ))}
               </>
             )}
@@ -118,32 +118,32 @@ export function Simulator() {
           {tab === "ussd" ? (
             <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (ended || screen == null) return; const v = input.trim(); if (v) { setInput(""); ussd([...path, v]); } }}>
               <input value={input} onChange={(e) => setInput(e.target.value)} inputMode="numeric" aria-label={t("simulator.ussdReply")} placeholder={ended ? t("simulator.sessionEndedPlaceholder") : t("simulator.replyPlaceholder")} disabled={ended || screen == null || busy}
-                className="min-w-0 flex-1 rounded-full bg-paper/10 px-4 py-2 text-sm text-paper placeholder:text-paper/40" />
-              <button disabled={ended || screen == null || busy} className="rounded-full bg-paper px-4 py-2 text-sm font-semibold text-ink disabled:opacity-40">{t("simulator.send")}</button>
+                className="min-w-0 flex-1 rounded-full bg-on-dark/10 px-4 py-2 text-sm text-on-dark placeholder:text-on-dark/50" />
+              <button disabled={ended || screen == null || busy} className="rounded-full bg-on-dark px-4 py-2 text-sm font-semibold text-ink disabled:opacity-40">{t("simulator.send")}</button>
             </form>
           ) : (
             <>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {CHIPS[tab].map((c) => (
                   <button key={c} onClick={() => send(role, (c === "ACK" || c === "CLOSE") ? `${c} ${lastCode(role)}`.trim() : c)} disabled={busy}
-                    className="rounded-full border border-paper/20 px-2.5 py-1 font-mono text-[11px] text-paper/80">{c}</button>
+                    className="rounded-full border border-on-dark/25 px-2.5 py-1 font-mono text-[11px] text-on-dark/85">{c}</button>
                 ))}
               </div>
               <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); send(role, input); }}>
                 <input value={input} onChange={(e) => setInput(e.target.value)} aria-label={t("simulator.smsText")} placeholder={t("simulator.typeSms")} disabled={busy}
-                  className="min-w-0 flex-1 rounded-full bg-paper/10 px-4 py-2 text-sm text-paper placeholder:text-paper/40" />
-                <button disabled={busy} className="rounded-full bg-paper px-4 py-2 text-sm font-semibold text-ink">{t("simulator.send")}</button>
+                  className="min-w-0 flex-1 rounded-full bg-on-dark/10 px-4 py-2 text-sm text-on-dark placeholder:text-on-dark/50" />
+                <button disabled={busy} className="rounded-full bg-on-dark px-4 py-2 text-sm font-semibold text-ink">{t("simulator.send")}</button>
               </form>
             </>
           )}
 
-          <div className="mt-3 flex items-center justify-between text-[11px] text-paper/60">
+          <div className="mt-3 flex items-center justify-between text-[11px] text-on-dark/70">
             <span>{t("simulator.skipTime")}
-              {[10, 30].map((m) => (<button key={m} onClick={() => call({ action: "advance", minutes: String(m) })} className="ml-1.5 rounded-full border border-paper/20 px-2 py-0.5">{t("simulator.minutes", { count: m })}</button>))}
+              {[10, 30].map((m) => (<button key={m} onClick={() => call({ action: "advance", minutes: String(m) })} className="ml-1.5 rounded-full border border-on-dark/25 px-2 py-0.5">{t("simulator.minutes", { count: m })}</button>))}
             </span>
             <button onClick={reset} className="underline">{t("simulator.reset")}</button>
           </div>
-          {err && <p role="alert" className="mt-2 rounded-xl bg-pink/15 px-3 py-2 text-xs text-pink-line">{err}</p>}
+          {err && <p role="alert" className="mt-2 rounded-xl bg-pink/15 px-3 py-2 text-xs text-pink">{err}</p>}
         </div>
       </div>
     </div>

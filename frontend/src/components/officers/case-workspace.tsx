@@ -3,6 +3,7 @@ import {
   AlertTriangle, ArrowUpRight, ClipboardList, FileText, HeartHandshake,
   LockKeyhole, RefreshCw, Send, ShieldCheck, UserCheck,
 } from "lucide-react";
+import { CopyButton } from "@/components/copy-button.tsx";
 import { useI18n } from "@/i18n/provider.tsx";
 import type { Dictionary } from "@/i18n/types.ts";
 import {
@@ -240,7 +241,7 @@ export function CaseWorkspace({ token, user }: Props) {
             <button key={item.id} type="button" onClick={() => void openCase(item.id)} className={`block w-full border-b border-line p-4 text-left transition last:border-0 hover:bg-pink-soft ${selectedId === item.id ? "bg-pink-soft" : ""}`}>
               <span className="flex items-center justify-between gap-2">
                 <span className="font-mono text-xs font-semibold text-pink">{item.caseCode}</span>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${item.priority === "URGENT" ? "bg-pink text-white" : "bg-soft text-muted"}`}>{label(dictionary, "priorities", item.priority)}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${item.priority === "URGENT" ? "bg-brand-fill text-white" : "bg-soft text-muted"}`}>{label(dictionary, "priorities", item.priority)}</span>
               </span>
               <span className="mt-1.5 block text-sm font-semibold text-ink">{label(dictionary, "topics", item.topic)}</span>
               <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
@@ -260,6 +261,7 @@ export function CaseWorkspace({ token, user }: Props) {
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
                 <div>
                   <p className="font-mono text-sm font-semibold text-pink">{detail.caseCode}</p>
+                  <div className="mt-2"><CopyButton value={detail.caseCode} label={t("caseWorkspace.copyCode")} compact /></div>
                   <h3 className="mt-1 text-xl font-semibold tracking-tight">{label(dictionary, "topics", detail.topic)}</h3>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${TERMINAL_STATUSES.includes(detail.status) ? "bg-soft text-muted" : "bg-pink-soft text-pink"}`}>{label(dictionary, "caseStatuses", detail.status)}</span>

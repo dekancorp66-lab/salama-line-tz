@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   DefaultValuePipe,
   ForbiddenException,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ContentStatus, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/current-user.decorator';
@@ -31,7 +33,9 @@ import { RolesGuard } from '../common/roles.guard';
 import { isSuperAdmin } from '../common/super-admin';
 import { PrismaService } from '../database/prisma.service';
 import { ApproveAiKnowledgeDto } from './dto/approve-ai-knowledge.dto';
+import { ApproveOfficerDto } from './dto/approve-officer.dto';
 import { CreateInstitutionDto } from './dto/create-institution.dto';
+import { CreateOfficerDto } from './dto/create-officer.dto';
 import { CreateAiKnowledgeSourceDto } from './dto/create-ai-knowledge-source.dto';
 import { CreateConsentPolicyDto } from './dto/create-consent-policy.dto';
 import { CreateServiceEntryDto } from './dto/create-service-entry.dto';
@@ -186,6 +190,132 @@ export class AdminController {
     });
   }
 
+  /**
+   * Officer provisioning. A super admin (or a public self-request through the
+   * auth endpoint) creates the account, but it always starts inactive so no
+   * officer can sign in until a super admin explicitly approves it below.
+   */
+  @Post('officers')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Register an officer account pending approval (Super Admin only)' })
+  async createOfficer(
+    @Body() dto: CreateOfficerDto,
+    @CurrentUser() actor: AuthenticatedAdmin,
+  ) {
+    const email = dto.email.trim().toLowerCase();
+    if (await this.prisma.user.findUnique({ where: { email } })) {
+      throw new ConflictException('An account with this email already exists');
+    }
+    const institutionId = dto.institutionId?.trim() || null;
+    if (institutionId) {
+      const institution = await this.prisma.institution.findUnique({
+        where: { id: institutionId },
+        select: { id: true, isActive: true },
+      });
+      if (!institution || !institution.isActive) {
+        throw new ForbiddenException('Institution must be an active institution');
+      }
+    }
+    const rounds = Math.min(14, Math.max(12, Number(process.env.BCRYPT_ROUNDS || 12)));
+    const officer = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash: await bcrypt.hash(dto.password, rounds),
+        displayName: dto.displayName.trim(),
+        role: UserRole.RESPONDER,
+        districtCode: dto.districtCode?.trim().toUpperCase() || null,
+        institutionId,
+        isActive: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        districtCode: true,
+        institutionId: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'ADMIN_OFFICER_REGISTERED',
+      resourceType: 'USER',
+      resourceId: officer.id,
+      outcome: 'pending_approval',
+    });
+    return {
+      ...officer,
+      message: 'Officer account created. A super admin must approve it before sign-in.',
+    };
+  }
+
+  @Post('officers/:id/approve')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Approve and activate a pending officer account (Super Admin only)' })
+  async approveOfficer(
+    @Param('id') id: string,
+    @Body() dto: ApproveOfficerDto,
+    @CurrentUser() actor: AuthenticatedAdmin,
+  ) {
+    const target = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true, isActive: true, institutionId: true },
+    });
+    if (!target) throw new NotFoundException('Officer account not found');
+    if (isSuperAdmin(target)) {
+      throw new ForbiddenException('The super administrator account cannot be modified here');
+    }
+
+    let institutionId: string | null | undefined;
+    if (dto.institutionId !== undefined) {
+      const requested = dto.institutionId.trim();
+      if (requested) {
+        const institution = await this.prisma.institution.findUnique({
+          where: { id: requested },
+          select: { id: true, isActive: true },
+        });
+        if (!institution || !institution.isActive) {
+          throw new ForbiddenException('Institution must be an active institution');
+        }
+        institutionId = requested;
+      } else {
+        institutionId = null;
+      }
+    }
+
+    const officer = await this.prisma.user.update({
+      where: { id },
+      data: {
+        isActive: true,
+        ...(dto.role ? { role: dto.role } : {}),
+        ...(dto.districtCode !== undefined
+          ? { districtCode: dto.districtCode.trim().toUpperCase() || null }
+          : {}),
+        ...(institutionId !== undefined ? { institutionId } : {}),
+        tokenVersion: { increment: 1 },
+      },
+      select: {
+        id: true,
+        email: true,
+        displayName: true,
+        role: true,
+        districtCode: true,
+        institutionId: true,
+        isActive: true,
+      },
+    });
+    await this.audit.record({
+      actorUserId: actor.id,
+      action: 'ADMIN_OFFICER_APPROVED',
+      resourceType: 'USER',
+      resourceId: id,
+      outcome: 'approved',
+    });
+    return officer;
+  }
+
   @Patch('users/:id/access')
   @ApiOperation({
     summary: 'Activate, deactivate, or change the access of a user',
@@ -209,6 +339,11 @@ export class AdminController {
     }
     if (!actorIsSuperAdmin && (target.role === UserRole.ADMIN || isSuperAdmin(target))) {
       throw new ForbiddenException('Only the super administrator can change administrator access');
+    }
+    // A pending account (inactive after registration) may only be activated by
+    // the super admin. Ordinary admins can manage already-approved staff.
+    if (!actorIsSuperAdmin && !target.isActive && body.isActive === true) {
+      throw new ForbiddenException('Only the super administrator can approve a pending account');
     }
     if (body.role && isPrivilegedRole(body.role) && !actorIsSuperAdmin) {
       throw new ForbiddenException('Only the super administrator can grant privileged roles');

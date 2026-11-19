@@ -18,6 +18,7 @@
   --wash: #f8f3f5;
   --soft: #fcf8f9;
   --inverse: #211c20;
+  --on-dark: #fffdfb;
   --space-section: clamp(4rem, 8vw, 7rem);
   --radius-card: 1.5rem;
   --radius-panel: 1.875rem;
@@ -30,22 +31,24 @@
 /* Dark theme keeps the SalamaLine pink identity while darkening every surface.
    --inverse stays dark in both themes because it is used for the video hero. */
 :root[data-theme="dark"] {
-  --brand-pink: #ff7ab7;
-  --brand-pink-hover: #ff9acb;
-  --brand-fill: #c31e6b;
-  --brand-fill-hover: #e03482;
-  --brand-pink-soft: #3a1f2d;
-  --brand-pink-line: #713a55;
-  --paper: #141118;
-  --ink: #f7eff4;
-  --muted: #bcb0b9;
-  --line: #342c36;
-  --wash: #1c1720;
-  --soft: #19141b;
-  --inverse: #0d0b0e;
-  --shadow-soft: 0 12px 34px rgb(0 0 0 / 35%);
-  --shadow-panel: 0 22px 70px rgb(0 0 0 / 50%);
-  --focus-ring: 0 0 0 3px rgb(255 122 183 / 32%);
+  --brand-pink: #ff8cc2;
+  --brand-pink-hover: #ffadd6;
+  --brand-fill: #d42776;
+  --brand-fill-hover: #e8428f;
+  --brand-pink-soft: #4a273d;
+  --brand-pink-line: #8d4c6d;
+  /* Lifted from near-black to a soft charcoal so text and panels stay legible
+     without the heavy, "too dark" feel of the previous palette. */
+  --paper: #2a2431;
+  --ink: #fff9fd;
+  --muted: #ded3dd;
+  --line: #5a4b60;
+  --wash: #342c3b;
+  --soft: #302838;
+  --inverse: #17131a;
+  --shadow-soft: 0 12px 34px rgb(0 0 0 / 22%);
+  --shadow-panel: 0 22px 70px rgb(0 0 0 / 32%);
+  --focus-ring: 0 0 0 3px rgb(255 140 194 / 32%);
   color-scheme: dark;
 }
 
@@ -70,6 +73,8 @@
   --color-pink-hover: var(--brand-pink-hover);
   --color-pink-soft: var(--brand-pink-soft);
   --color-pink-line: var(--brand-pink-line);
+  --color-brand-fill: var(--brand-fill);
+  --color-on-dark: var(--on-dark);
   --radius-pill: 999px;
 }
 

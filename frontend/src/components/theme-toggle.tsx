@@ -1,26 +1,26 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useI18n } from "@/i18n/provider.tsx";
-import type { TranslationKey } from "@/i18n/types.ts";
 import { useTheme } from "@/theme/provider.tsx";
 
-const LABELS: Record<string, TranslationKey> = {
-  light: "theme.light",
-  dark: "theme.dark",
-  system: "theme.system",
-};
-
-/** Light → dark → system cycle, available in every page header. */
+/**
+ * Familiar light/dark switch: a moon means "click to go dark" and a sun means
+ * "click to go light". The icon describes the destination, matching the
+ * convention used by most sites.
+ */
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const { theme, toggleTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const { t } = useI18n();
-  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
+  const goingDark = resolvedTheme !== "dark";
+  const Icon = goingDark ? Moon : Sun;
+  const label = goingDark ? t("theme.switchToDark") : t("theme.switchToLight");
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={`${t("theme.toggle")}: ${t(LABELS[theme]!)}`}
-      title={`${t("theme.toggle")}: ${t(LABELS[theme]!)}`}
+      aria-label={label}
+      title={label}
+      aria-pressed={resolvedTheme === "dark"}
       className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-paper text-muted transition hover:border-pink-line hover:bg-pink-soft hover:text-pink ${className}`}
     >
       <Icon size={18} aria-hidden="true" />

@@ -2,6 +2,11 @@ import { resolveApiBase } from "./api-base";
 
 export type AiLanguage = "sw" | "en";
 
+export interface AiConversationTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface AiSource {
   id: string;
   name: string;
@@ -78,10 +83,16 @@ export function checkAiHealth() {
   return apiRequest<AiHealth>("/ai/health");
 }
 
-export function askAi(question: string, language: AiLanguage) {
+export function askAi(
+  question: string,
+  language: AiLanguage,
+  context: AiConversationTurn[] = [],
+) {
   return apiRequest<AiAnswer>("/ai/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, language }),
+    // Only the last few turns are needed to resolve a follow-up, and the
+    // backend redacts names/contacts before retrieval or provider use.
+    body: JSON.stringify({ question, language, context: context.slice(-6) }),
   });
 }

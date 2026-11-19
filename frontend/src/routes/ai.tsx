@@ -5,7 +5,7 @@ import { PublicHeader } from "@/components/public-header.tsx";
 import { en } from "@/i18n/en.ts";
 import { useI18n, usePageMeta } from "@/i18n/provider.tsx";
 import type { TranslationKey } from "@/i18n/types.ts";
-import { askAi, checkAiHealth, type AiAnswer, type AiHealth, type AiSource } from "@/lib/ai-client";
+import { askAi, checkAiHealth, type AiAnswer, type AiConversationTurn, type AiHealth, type AiSource } from "@/lib/ai-client";
 
 export const Route = createFileRoute("/ai")({
   head: () => ({
@@ -65,12 +65,16 @@ function AiAssistant() {
       return;
     }
     const id = ++nextId.current;
+    const context: AiConversationTurn[] = messages.slice(-6).map((message) => ({
+      role: message.role,
+      content: message.text,
+    }));
     setError(null);
     setQuestion("");
     setMessages((previous) => [...previous, { id, role: "user", text }]);
     setPending(true);
     try {
-      const result: AiAnswer = await askAi(text, language);
+      const result: AiAnswer = await askAi(text, language, context);
       const answerText = typeof result.answer === "string" ? result.answer : "";
       if (!answerText) {
         setError({ kind: "key", key: "ai.emptyAnswer" });
@@ -120,7 +124,7 @@ function AiAssistant() {
             <div className="mb-2 flex items-center gap-2 font-semibold text-pink"><CircleAlert size={17} />{t("ai.emergencyTitle")}</div>
             {t("ai.emergency")}
           </div>
-          <a href="/report" className="block rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-4 text-sm font-semibold text-pink transition hover:bg-pink-line">{t("ai.talkToPerson")}</a>
+          <a href="/report" className="block rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-4 text-sm font-semibold text-pink transition hover:bg-brand-fill hover:text-white">{t("ai.talkToPerson")}</a>
           <div className="flex items-center gap-2 px-1 text-xs text-muted" aria-live="polite">
             {health === "ready" ? <Wifi size={15} className="text-pink" /> : health === "checking" ? <LoaderCircle size={15} className="animate-spin text-pink" /> : <WifiOff size={15} className="text-pink" />}
             <span>{health === "ready" ? t("ai.ready") : health === "checking" ? t("ai.checking") : t("ai.unavailable")}</span>
@@ -141,7 +145,7 @@ function AiAssistant() {
               <div className="mt-7"><p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">{t("ai.suggestions")}</p><div className="grid gap-2 sm:grid-cols-2">{suggestions.map((item) => <button key={item} disabled={pending} onClick={() => void send(item)} className="min-h-12 rounded-2xl border border-line bg-paper px-4 py-3 text-left text-sm leading-snug text-ink transition hover:border-pink/50 hover:bg-pink-soft disabled:opacity-50">{item}</button>)}</div></div>
             </div> : messages.map((message) => <article key={message.id} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               {message.role === "assistant" && <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-pink-soft text-pink"><Bot size={18} /></span>}
-              <div className={`min-w-0 max-w-[calc(100%-3rem)] break-words sm:max-w-[78%] ${message.role === "user" ? "rounded-2xl rounded-tr-sm bg-pink px-4 py-3 text-white" : "rounded-2xl rounded-tl-sm border border-line bg-soft px-4 py-3 text-ink"}`}>
+              <div className={`min-w-0 max-w-[calc(100%-3rem)] break-words sm:max-w-[78%] ${message.role === "user" ? "rounded-2xl rounded-tr-sm bg-brand-fill px-4 py-3 text-white" : "rounded-2xl rounded-tl-sm border border-line bg-soft px-4 py-3 text-ink"}`}>
                 {message.noAnswer && <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-pink"><CircleAlert size={14} />{t("ai.noAnswer")}</p>}
                 {message.role === "assistant" && message.directAnswer ? <>
                   <p className="whitespace-pre-wrap text-[15px] font-semibold leading-relaxed">{message.directAnswer}</p>

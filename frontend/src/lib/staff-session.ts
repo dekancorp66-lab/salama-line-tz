@@ -58,6 +58,7 @@ function hasRole(allowed: readonly string[], role?: string | null): boolean {
 }
 
 export const isAdminRole = (role?: string | null) => hasRole(ADMIN_ROLES, role);
+export const isSuperAdmin = (role?: string | null) => role === "SUPER_ADMIN";
 export const canManageCases = (role?: string | null) => hasRole(CASE_MANAGEMENT_ROLES, role);
 export const canManageContent = (role?: string | null) => hasRole(CONTENT_ROLES, role);
 export const canManageServices = (role?: string | null) => hasRole(SERVICE_ROLES, role);

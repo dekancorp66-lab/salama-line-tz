@@ -75,7 +75,7 @@ function OfficersDashboard() {
               type="button"
               onClick={() => setTab("cases")}
               aria-current={activeTab === "cases" ? "page" : undefined}
-              className={`min-h-10 rounded-full border px-4 text-sm font-semibold transition ${activeTab === "cases" ? "border-pink bg-pink text-white" : "border-line bg-paper hover:bg-pink-soft"}`}
+              className={`min-h-10 rounded-full border px-4 text-sm font-semibold transition ${activeTab === "cases" ? "border-brand-fill bg-brand-fill text-white" : "border-line bg-paper hover:bg-pink-soft"}`}
             >
               {t("officers.caseWork")}
             </button>
@@ -85,7 +85,7 @@ function OfficersDashboard() {
               type="button"
               onClick={() => setTab("admin")}
               aria-current={activeTab === "admin" ? "page" : undefined}
-              className={`min-h-10 rounded-full border px-4 text-sm font-semibold transition ${activeTab === "admin" ? "border-pink bg-pink text-white" : "border-line bg-paper hover:bg-pink-soft"}`}
+              className={`min-h-10 rounded-full border px-4 text-sm font-semibold transition ${activeTab === "admin" ? "border-brand-fill bg-brand-fill text-white" : "border-line bg-paper hover:bg-pink-soft"}`}
             >
               {t("admin.title")}
             </button>

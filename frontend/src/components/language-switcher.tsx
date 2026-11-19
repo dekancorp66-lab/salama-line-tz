@@ -21,7 +21,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
             aria-pressed={language === option.value}
             className={`min-h-10 rounded-full px-3 py-2 text-sm transition ${
               language === option.value
-                ? "bg-pink text-white"
+                ? "bg-brand-fill text-white"
                 : "text-muted hover:bg-pink-soft hover:text-pink"
             }`}
           >

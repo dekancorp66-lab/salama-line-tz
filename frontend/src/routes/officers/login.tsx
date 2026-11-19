@@ -1,9 +1,9 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { BriefcaseBusiness, CircleAlert, Lock, ShieldCheck } from "lucide-react";
+import { BriefcaseBusiness, CircleAlert, Lock, ShieldCheck, UserPlus } from "lucide-react";
 import { GlobalControls } from "@/components/global-controls";
 import { useI18n, usePageMeta } from "@/i18n/provider.tsx";
-import { loginStaff } from "@/lib/backend-api";
+import { loginStaff, registerStaff } from "@/lib/backend-api";
 import { setStaffSession, useStaffSession } from "@/lib/staff-session";
 
 export const Route = createFileRoute("/officers/login")({
@@ -19,6 +19,13 @@ function OfficersLogin() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [showRequest, setShowRequest] = useState(false);
+  const [requestName, setRequestName] = useState("");
+  const [requestEmail, setRequestEmail] = useState("");
+  const [requestPassword, setRequestPassword] = useState("");
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requestDone, setRequestDone] = useState(false);
+  const [requestError, setRequestError] = useState("");
 
   if (session.token && session.user) {
     return <Navigate to="/officers/dashboard" />;
@@ -37,6 +44,25 @@ function OfficersLogin() {
       setError(errorMessage(cause));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function requestAccount(event: FormEvent) {
+    event.preventDefault();
+    setRequestBusy(true);
+    setRequestError("");
+    try {
+      await registerStaff({
+        displayName: requestName.trim(),
+        email: requestEmail.trim(),
+        password: requestPassword,
+      });
+      setRequestDone(true);
+      setRequestPassword("");
+    } catch (cause) {
+      setRequestError(errorMessage(cause));
+    } finally {
+      setRequestBusy(false);
     }
   }
 
@@ -71,6 +97,34 @@ function OfficersLogin() {
             <button type="submit" disabled={busy} className="brand-fill min-h-12 w-full rounded-full px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? t("common.signingIn") : t("common.signIn")}</button>
           </form>
           <p className="mt-5 flex items-center gap-2 text-xs text-muted"><Lock size={14} className="text-pink" />{t("officers.sessionNote")}</p>
+          {!showRequest ? (
+            <button type="button" onClick={() => { setShowRequest(true); setError(""); setRequestError(""); }} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-pink underline underline-offset-4">
+              <UserPlus size={16} />{t("officers.requestAccountTitle")}
+            </button>
+          ) : (
+            <div className="mt-7 max-w-md border-t border-line pt-6">
+              <h2 className="text-lg font-semibold">{t("officers.requestAccountTitle")}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{t("officers.requestAccountIntro")}</p>
+              {requestDone ? (
+                <p role="status" className="mt-4 rounded-xl border border-pink-line bg-pink-soft px-3 py-3 text-sm leading-relaxed text-pink-hover">{t("officers.requestSubmitted")}</p>
+              ) : (
+                <form onSubmit={(event) => void requestAccount(event)} className="mt-4 space-y-4">
+                  {requestError ? <p role="alert" className="flex items-start gap-2 rounded-xl border border-pink-line bg-pink-soft px-3 py-2.5 text-sm leading-relaxed text-pink-hover"><CircleAlert size={16} className="mt-0.5 shrink-0" />{requestError}</p> : null}
+                  <label className="block text-sm font-semibold">{t("officers.requestName")}
+                    <input type="text" required minLength={2} maxLength={80} value={requestName} onChange={(event) => setRequestName(event.target.value)} autoComplete="name" className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink" />
+                  </label>
+                  <label className="block text-sm font-semibold">{t("officers.requestEmail")}
+                    <input type="email" required value={requestEmail} onChange={(event) => setRequestEmail(event.target.value)} autoComplete="email" className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink" />
+                  </label>
+                  <label className="block text-sm font-semibold">{t("officers.requestPassword")}
+                    <input type="password" required minLength={12} maxLength={128} value={requestPassword} onChange={(event) => setRequestPassword(event.target.value)} autoComplete="new-password" className="mt-2 min-h-12 w-full rounded-xl border border-line bg-paper px-3 text-sm outline-none focus:border-pink" />
+                  </label>
+                  <button type="submit" disabled={requestBusy} className="brand-fill min-h-12 w-full rounded-full px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{requestBusy ? t("common.sending") : t("officers.requestAccount")}</button>
+                </form>
+              )}
+              <button type="button" onClick={() => { setShowRequest(false); setRequestDone(false); }} className="mt-4 text-sm font-semibold text-pink underline underline-offset-4">{t("officers.backToSignIn")}</button>
+            </div>
+          )}
         </section>
 
         <aside className="space-y-4">

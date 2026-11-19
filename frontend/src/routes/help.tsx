@@ -14,6 +14,7 @@ import {
   Shield,
   Users,
 } from "lucide-react";
+import { CopyButton } from "@/components/copy-button.tsx";
 import { PublicHeader } from "@/components/public-header.tsx";
 import { en } from "@/i18n/en.ts";
 import { useI18n, usePageMeta } from "@/i18n/provider.tsx";
@@ -384,7 +385,7 @@ export function GetHelpForm({ current = "/report" }: { current?: string }) {
           <a href="/ai" className="flex items-center justify-between rounded-[var(--radius-card)] border border-line bg-paper px-5 py-4 text-sm font-medium text-ink transition hover:border-pink-line hover:bg-pink-soft">
             <span>{t("help.trustedInformation")}</span><span className="text-pink">→</span>
           </a>
-          <a href="/track" className="flex items-center gap-3 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft px-5 py-4 text-sm transition hover:bg-pink-line">
+          <a href="/track" className="flex items-center gap-3 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft px-5 py-4 text-sm transition hover:bg-brand-fill hover:text-white">
             <Search size={18} className="shrink-0 text-pink" />
             <span>
               <span className="block font-semibold text-pink">{t("help.track")}</span>
@@ -402,6 +403,9 @@ export function GetHelpForm({ current = "/report" }: { current?: string }) {
               <div className="mt-7 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-6">
                 <p className="text-xs font-semibold uppercase tracking-wide text-pink">{t("help.code")}</p>
                 <p className="mt-2 break-all font-mono text-3xl font-semibold tracking-wider text-ink">{receipt.caseCode}</p>
+                <div className="mt-4 flex justify-center">
+                  <CopyButton value={receipt.caseCode} label={t("help.copyCode")} />
+                </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted">{t("help.codeHint")}</p>
               </div>
               <p className="mt-5 flex items-start justify-center gap-2 text-sm text-muted"><Lock size={16} className="mt-0.5 shrink-0 text-pink" />{t("help.saved")}</p>
@@ -458,7 +462,7 @@ export function GetHelpForm({ current = "/report" }: { current?: string }) {
                         type="button"
                         onClick={() => void detectLocation()}
                         disabled={gpsStatus === "detecting"}
-                        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-pink-line bg-pink-soft px-5 py-2.5 text-sm font-semibold text-pink transition hover:bg-pink-line disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-pink-line bg-pink-soft px-5 py-2.5 text-sm font-semibold text-pink transition hover:bg-brand-fill hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <LocateFixed size={16} />
                         {gpsStatus === "detecting" ? t("help.detectingLocation") : t("help.useMyLocation")}

@@ -10,6 +10,7 @@ import {
   Search,
   Shield,
 } from "lucide-react";
+import { CopyButton } from "@/components/copy-button.tsx";
 import { PublicHeader } from "@/components/public-header.tsx";
 import { en } from "@/i18n/en.ts";
 import { useI18n, usePageMeta } from "@/i18n/provider.tsx";
@@ -222,6 +223,9 @@ function TrackCasePage() {
                     <p className="mt-1 break-all font-mono text-2xl font-semibold tracking-wider text-ink sm:text-3xl">
                       {result.caseCode}
                     </p>
+                    <div className="mt-3">
+                      <CopyButton value={result.caseCode} label={t("track.copyCode")} compact />
+                    </div>
                   </div>
                   <span className="inline-flex items-center gap-2 rounded-full border border-pink-line bg-paper px-4 py-2 text-sm font-semibold text-pink">
                     <Check size={15} /> {statusLabel(language, result.status)}

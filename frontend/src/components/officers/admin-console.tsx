@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   Archive, BadgeCheck, CircleAlert, ClipboardCheck, FileCheck2, RefreshCw,
-  ScrollText, ShieldCheck, UserCog, Users,
+  ScrollText, ShieldCheck, UserCheck, UserCog, UserPlus, Users,
 } from "lucide-react";
 import { useI18n } from "@/i18n/provider.tsx";
 import type { Dictionary } from "@/i18n/types.ts";
 import {
-  archiveContent, createConsentPolicy, createServiceEntry, getAdminMetrics, listAuditEvents,
-  listConsentPolicies, listContentQueue, listResponders, listServicesForReview,
-  listUsers, revokeConsentPolicy, sweepExpiredCases, updateResponderAvailability,
-  updateUserAccess, verifyService,
+  approveOfficer, archiveContent, createConsentPolicy, createOfficer, createServiceEntry,
+  getAdminMetrics, listAuditEvents, listConsentPolicies, listContentQueue, listResponders,
+  listServicesForReview, listUsers, revokeConsentPolicy, sweepExpiredCases,
+  updateResponderAvailability, updateUserAccess, verifyService,
   type AdminMetrics, type AuditEvent, type ConsentPolicy, type ContentReviewRecord,
   type ResponderRecord, type ServiceReviewRecord, type StaffUserRecord,
 } from "@/lib/backend-api";
-import { canManageContent, canManageServices, canReadAudit, isAdminRole, type StaffUser } from "@/lib/staff-session";
+import {
+  canManageContent, canManageServices, canReadAudit, isAdminRole, isSuperAdmin,
+  type StaffUser,
+} from "@/lib/staff-session";
 
 interface Props {
   token: string;
@@ -34,6 +37,7 @@ function label(dictionary: Dictionary, group: keyof Dictionary["labels"], value:
 export function AdminConsole({ token, user }: Props) {
   const { t, dictionary, errorMessage } = useI18n();
   const admin = isAdminRole(user.role);
+  const superAdmin = isSuperAdmin(user.role);
   const [section, setSection] = useState<Section>("overview");
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [users, setUsers] = useState<StaffUserRecord[]>([]);
@@ -54,6 +58,10 @@ export function AdminConsole({ token, user }: Props) {
   const [verificationOrg, setVerificationOrg] = useState("");
   const [verifiedBy, setVerifiedBy] = useState("");
   const [verifiedAt, setVerifiedAt] = useState("");
+  const [officerName, setOfficerName] = useState("");
+  const [officerEmail, setOfficerEmail] = useState("");
+  const [officerPassword, setOfficerPassword] = useState("");
+  const [officerDistrict, setOfficerDistrict] = useState("");
 
   const setError = (key: string, value: string) => setErrors((previous) => ({ ...previous, [key]: value }));
 
@@ -104,6 +112,7 @@ export function AdminConsole({ token, user }: Props) {
     return admin; // overview, staff, responders and policies are admin-only
   });
   const activeSection: Section = visible.some((item) => item.id === section) ? section : visible[0]?.id ?? "overview";
+  const pendingOfficers = users.filter((item) => !item.isActive && item.role === "RESPONDER");
 
   const metricCards: [string, string | number][] = [
     [t("admin.totalCases"), metrics?.cases ?? "—"],
@@ -129,7 +138,7 @@ export function AdminConsole({ token, user }: Props) {
         {visible.map((item) => {
           const Icon = item.icon;
           return (
-            <button key={item.id} type="button" onClick={() => setSection(item.id)} aria-current={activeSection === item.id ? "page" : undefined} className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition ${activeSection === item.id ? "border-pink bg-pink text-white" : "border-line bg-paper text-ink hover:border-pink-line hover:bg-pink-soft"}`}>
+            <button key={item.id} type="button" onClick={() => setSection(item.id)} aria-current={activeSection === item.id ? "page" : undefined} className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition ${activeSection === item.id ? "border-brand-fill bg-brand-fill text-white" : "border-line bg-paper text-ink hover:border-pink-line hover:bg-pink-soft"}`}>
               <Icon size={15} />{item.label}
             </button>
           );
@@ -163,9 +172,71 @@ export function AdminConsole({ token, user }: Props) {
       )}
 
       {activeSection === "staff" && (
-        <div className="space-y-3">
-          {users.length === 0 && <p className="text-sm text-muted">{t("admin.noStaff")}</p>}
-          {users.map((item) => <UserRow key={item.id} item={item} token={token} admin={admin} busy={busy} onRun={(action, message) => void run("users", action, message)} />)}
+        <div className="space-y-5">
+          {superAdmin && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void run("officers", () => createOfficer(token, {
+                  displayName: officerName.trim(),
+                  email: officerEmail.trim(),
+                  password: officerPassword,
+                  districtCode: officerDistrict.trim() || undefined,
+                }), t("admin.officerRegistered")).then(() => {
+                  setOfficerName(""); setOfficerEmail(""); setOfficerPassword(""); setOfficerDistrict("");
+                });
+              }}
+              className="grid gap-2 rounded-[var(--radius-card)] border border-pink-line bg-paper p-4 sm:grid-cols-2"
+            >
+              <p className="flex items-center gap-2 sm:col-span-2 text-sm font-semibold"><UserPlus size={17} className="text-pink" />{t("admin.registerOfficerTitle")}</p>
+              <p className="sm:col-span-2 text-xs leading-relaxed text-muted">{t("admin.registerOfficerIntro")}</p>
+              <label className="text-xs font-medium text-muted">{t("admin.officerName")}
+                <input required value={officerName} onChange={(event) => setOfficerName(event.target.value)} minLength={2} maxLength={80} className="mt-1 min-h-10 w-full rounded-xl border border-line bg-paper px-3 text-sm text-ink outline-none focus:border-pink" />
+              </label>
+              <label className="text-xs font-medium text-muted">{t("admin.officerEmail")}
+                <input required type="email" value={officerEmail} onChange={(event) => setOfficerEmail(event.target.value)} className="mt-1 min-h-10 w-full rounded-xl border border-line bg-paper px-3 text-sm text-ink outline-none focus:border-pink" />
+              </label>
+              <label className="text-xs font-medium text-muted">{t("admin.officerPassword")}
+                <input required type="password" value={officerPassword} onChange={(event) => setOfficerPassword(event.target.value)} minLength={12} maxLength={128} autoComplete="new-password" className="mt-1 min-h-10 w-full rounded-xl border border-line bg-paper px-3 text-sm text-ink outline-none focus:border-pink" />
+              </label>
+              <label className="text-xs font-medium text-muted">{t("admin.officerDistrict")}
+                <input value={officerDistrict} onChange={(event) => setOfficerDistrict(event.target.value.toUpperCase())} maxLength={20} placeholder={t("admin.districtPlaceholder")} className="mt-1 min-h-10 w-full rounded-xl border border-line bg-paper px-3 text-sm text-ink outline-none focus:border-pink" />
+              </label>
+              <button type="submit" disabled={busy || officerName.length < 2 || officerPassword.length < 12 || !officerEmail} className="brand-fill sm:col-span-2 min-h-10 rounded-xl px-4 text-sm font-semibold text-white disabled:opacity-40">{t("admin.registerOfficer")}</button>
+            </form>
+          )}
+
+          {superAdmin && (
+            <div className="space-y-3">
+              <p className="flex items-center gap-2 text-sm font-semibold"><UserCheck size={17} className="text-pink" />{t("admin.pendingApproval")}</p>
+              <p className="text-xs leading-relaxed text-muted">{t("admin.approvalNote")}</p>
+              {pendingOfficers.length === 0 ? (
+                <p className="text-sm text-muted">{t("admin.noPendingOfficers")}</p>
+              ) : pendingOfficers.map((item) => (
+                <div key={item.id} className="flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft p-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">{item.displayName}</p>
+                    <p className="text-xs text-muted">{item.email} · {item.districtCode ?? t("admin.noDistrict")}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void run("officers", () => approveOfficer(token, item.id, {
+                      districtCode: item.districtCode ?? undefined,
+                    }), t("admin.officerApproved"))}
+                    className="brand-fill inline-flex min-h-10 items-center gap-1.5 rounded-xl px-4 text-xs font-semibold text-white disabled:opacity-40"
+                  >
+                    <UserCheck size={14} />{t("admin.approveOfficer")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {users.length === 0 && <p className="text-sm text-muted">{t("admin.noStaff")}</p>}
+            {users.map((item) => <UserRow key={item.id} item={item} token={token} admin={admin} busy={busy} onRun={(action, message) => void run("users", action, message)} />)}
+          </div>
         </div>
       )}
 

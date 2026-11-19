@@ -258,6 +258,18 @@ export function loginStaff(email: string, password: string) {
   });
 }
 
+/** Public officer account request. The account stays inactive until approved. */
+export function registerStaff(input: {
+  email: string;
+  password: string;
+  displayName: string;
+}) {
+  return apiRequest<{ message: string; user: StaffUserRecord }>("/auth/register", {
+    method: "POST",
+    body: input,
+  });
+}
+
 export function fetchCurrentUser(token: string) {
   return apiRequest<{ user: StaffUser }>("/auth/me", auth(token));
 }
@@ -352,6 +364,36 @@ export function sweepExpiredCases(token: string) {
 
 export function listUsers(token: string) {
   return apiRequest<StaffUserRecord[]>("/admin/users", auth(token));
+}
+
+export interface CreateOfficerInput {
+  email: string;
+  password: string;
+  displayName: string;
+  districtCode?: string;
+  institutionId?: string;
+}
+
+export function createOfficer(token: string, input: CreateOfficerInput) {
+  return apiRequest<StaffUserRecord & { message: string }>("/admin/officers", {
+    ...auth(token),
+    method: "POST",
+    body: input,
+  });
+}
+
+export interface ApproveOfficerInput {
+  role?: string;
+  districtCode?: string;
+  institutionId?: string;
+}
+
+export function approveOfficer(token: string, id: string, input: ApproveOfficerInput = {}) {
+  return apiRequest<StaffUserRecord>(`/admin/officers/${encodeURIComponent(id)}/approve`, {
+    ...auth(token),
+    method: "POST",
+    body: input,
+  });
 }
 
 export function listResponders(token: string) {

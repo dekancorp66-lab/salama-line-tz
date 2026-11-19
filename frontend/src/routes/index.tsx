@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -11,6 +11,7 @@ import {
   Search,
   Shield,
 } from "lucide-react";
+import { HeroSlideshow } from "@/components/hero-slideshow.tsx";
 import { LogoMarquee } from "@/components/logo-marquee.tsx";
 import { PublicHeader } from "@/components/public-header.tsx";
 import { en } from "@/i18n/en.ts";
@@ -25,64 +26,6 @@ export const Route = createFileRoute("/")({
   }),
   component: Home,
 });
-
-const HERO_IMAGES = [
-  "/image/home%20/Maasai%20women.jpeg",
-  "/image/home%20/_%20%281%29.jpeg",
-  "/image/home%20/_%20%282%29.jpeg",
-  "/image/home%20/_.jpeg",
-  "/image/home%20/black.jpg",
-  "/image/home%20/so%20fearfully%20%26%20wonderfully%20made.jpeg",
-  "/image/home%20/%F0%9F%92%99%F0%9F%92%99%F0%9F%92%99.jpeg",
-] as const;
-
-function HeroSlideshow() {
-  const [index, setIndex] = useState(0);
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    HERO_IMAGES.forEach((src) => {
-      const img = new window.Image();
-      img.decoding = "async";
-      img.src = src;
-    });
-  }, []);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReduceMotion(media.matches);
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, []);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % HERO_IMAGES.length);
-    }, 3000);
-    return () => window.clearInterval(id);
-  }, [reduceMotion]);
-
-  return (
-    <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true">
-      {HERO_IMAGES.map((src, i) => (
-        <img
-          key={src}
-          src={src}
-          alt=""
-          className={`absolute inset-0 h-full w-full object-cover object-[center_30%] transition-opacity duration-1000 ease-in-out motion-reduce:duration-0 ${
-            i === (reduceMotion ? 0 : index) ? "opacity-100" : "opacity-0"
-          }`}
-          loading={i === 0 ? "eager" : "lazy"}
-          decoding="async"
-          fetchPriority={i === 0 ? "high" : "low"}
-          draggable={false}
-        />
-      ))}
-    </div>
-  );
-}
 
 function Home() {
   const { t, dictionary } = useI18n();

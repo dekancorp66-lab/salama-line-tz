@@ -161,7 +161,7 @@ function Services() {
           </div>
           <a
             href="/track"
-            className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft px-5 py-4 text-sm transition hover:bg-pink-line"
+            className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-pink-line bg-pink-soft px-5 py-4 text-sm transition hover:bg-brand-fill hover:text-white"
           >
             <span className="flex min-w-0 items-center gap-3">
               <Search size={18} className="shrink-0 text-pink" />

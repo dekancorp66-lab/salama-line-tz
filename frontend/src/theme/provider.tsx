@@ -26,8 +26,6 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const ORDER: readonly Theme[] = ["light", "dark", "system"];
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // The bootstrap script has already set data-theme; start from the default and
   // adopt the stored value after hydration to keep server/client markup stable.
@@ -54,13 +52,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     writeStoredTheme(theme);
 
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = resolvedTheme === "dark" ? "#141118" : "#fffdfb";
+    if (themeColor) themeColor.content = resolvedTheme === "dark" ? "#2a2431" : "#fffdfb";
   }, [resolvedTheme, theme]);
 
   const setTheme = useCallback((next: Theme) => setThemeState(next), []);
   const toggleTheme = useCallback(() => {
-    setThemeState((current) => ORDER[(ORDER.indexOf(current) + 1) % ORDER.length]!);
-  }, []);
+    setThemeState((current) => {
+      const showing = resolveTheme(current, systemDark);
+      return showing === "dark" ? "light" : "dark";
+    });
+  }, [systemDark]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({ theme, resolvedTheme, setTheme, toggleTheme }),

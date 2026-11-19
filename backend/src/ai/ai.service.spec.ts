@@ -327,4 +327,83 @@ describe("SalamaLine AI grounded answers", () => {
         throw new Error(`Expected a source for relevant prompt: ${question}`);
     }
   });
+
+  it("resolves a follow-up against recent conversation context", async () => {
+    const context = [
+      {
+        role: "user" as const,
+        content: "At what age can a girl get married in Tanzania?",
+      },
+      {
+        role: "assistant" as const,
+        content: "For Mainland Tanzania, the minimum marriage age is 18.",
+      },
+    ];
+    const result = await service.ask("What if she is 14?", "en", context);
+    expect(result.status).toBe("answered");
+    expect(result.directAnswer).toContain("18");
+    expect(result.sources.length).toBeGreaterThan(0);
+  });
+
+  it("keeps the original topic across a chain of follow-ups", async () => {
+    const context = [
+      {
+        role: "user" as const,
+        content: "At what age can a girl get married in Tanzania?",
+      },
+      { role: "assistant" as const, content: "The minimum age is 18." },
+      { role: "user" as const, content: "What if she is 14?" },
+      {
+        role: "assistant" as const,
+        content: "The Court of Appeal says the minimum age is 18 for everyone.",
+      },
+    ];
+    const result = await service.ask("And if she is 16?", "en", context);
+    expect(result.status).toBe("answered");
+    expect(result.directAnswer).toContain("18");
+  });
+
+  it("uses the language of the earlier turn when a follow-up has no language clues", async () => {
+    const context = [
+      { role: "user" as const, content: "Je, ukeketaji ni hatari kwa mtoto?" },
+      {
+        role: "assistant" as const,
+        content: "Hapana. Ukeketaji hauna faida ya kiafya.",
+      },
+    ];
+    const result = await service.ask("And if 14?", undefined, context);
+    expect(result.language).toBe("sw");
+    expect(result.directAnswer).toMatch(/Hapana|Ukeketaji/);
+  });
+
+  it("redacts identifying details in conversation context", async () => {
+    const result = await service.ask("What about her?", "en", [
+      {
+        role: "user",
+        content:
+          "My name is Amina Juma, email amina@example.com, and I asked about FGM.",
+      },
+      { role: "assistant", content: "FGM has no health benefit." },
+    ]);
+    expect(JSON.stringify(result)).not.toMatch(/Amina|amina@example\.com/);
+  });
+
+  it("answers a general in-scope question from loaded evidence with a source", async () => {
+    const result = await service.ask("What is the LIVES approach?", "en");
+    expect(result.status).toBe("answered");
+    expect(result.directAnswer).toContain("The loaded guidance says:");
+    expect(result.directAnswer).not.toMatch(
+      /\b(?:article|section|ibara|kifungu)\s+\d+/i,
+    );
+    expect(result.sources.length).toBeGreaterThan(0);
+  });
+
+  it("speaks directly to the person asking for help instead of a third person", async () => {
+    const result = await service.ask(
+      "I do not feel safe at home. How can I get help without sharing my name?",
+      "en",
+    );
+    expect(result.directAnswer).toMatch(/You deserve|You can speak/);
+    expect(result.directAnswer).not.toMatch(/the person can speak/i);
+  });
 });
