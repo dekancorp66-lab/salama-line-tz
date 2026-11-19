@@ -6,8 +6,12 @@ import {
 import { KnowledgeLoaderService } from "./knowledge/knowledge-loader.service";
 import { KnowledgeRetrievalService } from "./knowledge/knowledge-retrieval.service";
 import { AiScopePolicyService } from "./ai-scope-policy.service";
+import { ConversationTurnDto } from "./dto/ask-ai.dto";
 
 type Language = "sw" | "en";
+
+const FOLLOW_UP_PATTERN =
+  /^(?:and\b|also\b|but\b|then\b|so\b|na\b|pia\b|na\s+je\b|vipi\s+kuhusu\b|kwa\s+nini\s+hivyo\b|what\s+if\b|what\s+about\b|how\s+about\b|why\s+is\s+that\b|why\s+does\s+that\b|could\s+you\s+explain\b|can\s+you\s+explain\b|what\s+should\b|how\s+can\s+i\s+help\b|does\s+that\b|would\s+that\b|is\s+that\b|na\s+akisema\b|akikataa\b|akikubali\b)/i;
 
 @Injectable()
 export class AiService {
@@ -30,22 +34,36 @@ export class AiService {
     };
   }
 
-  async ask(question: string, requestedLanguage?: Language) {
+  async ask(
+    question: string,
+    requestedLanguage?: Language,
+    context: ConversationTurnDto[] = [],
+  ) {
     question = this.redact(question);
-    const language = requestedLanguage || this.detectLanguage(question);
+    // Only the immediately preceding turns are needed to resolve a follow-up,
+    // and every turn is redacted before it reaches retrieval or the provider.
+    const recentContext = context
+      .slice(-6)
+      .map((turn) => ({ role: turn.role, content: this.redact(turn.content) }))
+      .filter((turn) => turn.content.trim());
+    const topicQuestion = this.resolveFollowUp(question, recentContext);
+    const detected =
+      this.detectLanguage(question) || this.detectLanguageFromContext(recentContext);
+    const language = requestedLanguage || detected;
     const safety = this.assessSafety(question);
     // A wider candidate set lets the answer layer combine legal, constitutional,
     // WHO, Q&A and safeguarding evidence rather than returning one best hit.
-    const retrieved = this.retrieval.search(question, language, 18);
-    const scope = this.scopePolicy.classify(question, retrieved);
+    const retrieved = this.retrieval.search(topicQuestion, language, 18);
+    const scope = this.scopePolicy.classify(topicQuestion, retrieved);
     if (scope !== "relevant" && !safety.escalate) {
       return this.scopeResponse(scope, language, safety);
     }
     const generated = await this.generation.generate(
-      question,
+      topicQuestion,
       language,
       retrieved,
       this.loader.getSafetyRules(),
+      recentContext,
     );
     const answer = [
       generated.directAnswer,
@@ -138,6 +156,45 @@ export class AiService {
     };
   }
 
+  /**
+   * Follow-ups such as "what if she is 14?" are meaningless on their own. When
+   * the client supplies recent turns, borrow the subject from the last user
+   * turn so retrieval and intent detection answer the question actually being
+   * asked. Without history the original question is kept, which preserves the
+   * assistant's "please restate the topic" behaviour.
+   */
+  private resolveFollowUp(
+    question: string,
+    context: Array<{ role: "user" | "assistant"; content: string }>,
+  ): string {
+    if (!FOLLOW_UP_PATTERN.test(question.trim())) return question;
+    const userTurns = context
+      .filter((turn) => turn.role === "user" && turn.content.trim())
+      .slice(-4);
+    if (!userTurns.length) return question;
+    // Skip earlier follow-ups until the last self-contained question so a chain
+    // like "what if she is 14?" → "and if she is 16?" keeps the original topic.
+    let anchor = -1;
+    for (let i = userTurns.length - 1; i >= 0; i -= 1) {
+      if (!FOLLOW_UP_PATTERN.test(userTurns[i].content.trim())) {
+        anchor = i;
+        break;
+      }
+    }
+    const relevant = anchor >= 0 ? userTurns.slice(anchor) : userTurns;
+    const combined = `${relevant.map((turn) => turn.content).join(" ")} ${question}`.trim();
+    return combined.slice(0, 1800);
+  }
+
+  private detectLanguageFromContext(
+    context: Array<{ role: "user" | "assistant"; content: string }>,
+  ): Language {
+    const lastUser = [...context]
+      .reverse()
+      .find((turn) => turn.role === "user" && turn.content.trim());
+    return (lastUser && this.detectLanguage(lastUser.content)) || "en";
+  }
+
   private redact(question: string): string {
     return question
       .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted]")
@@ -150,13 +207,17 @@ export class AiService {
       .slice(0, 1200);
   }
 
-  private detectLanguage(question: string): Language {
+  private detectLanguage(question: string): Language | undefined {
     const swWords =
       /\b(nina|nini|vipi|je|msaada|mtoto|ukatili|sheria|nawezaje|tafadhali|wapi|yangu|kwangu|ukeketaji|haki|elimu|ndoa|katiba|asante|shukrani|unaitwa|jitambulishe|wewe|jina|nani)\b/i;
-    return swWords.test(question) ||
+    if (
+      swWords.test(question) ||
       /^\s*(habari|hujambo|mambo)\b/i.test(question)
-      ? "sw"
-      : "en";
+    )
+      return "sw";
+    if (/\b(the|what|why|how|can|could|should|would|where|when|who|hello|thanks|please|child|rights?|education|health|law|constitution)\b/i.test(question))
+      return "en";
+    return undefined;
   }
 
   private assessSafety(question: string) {

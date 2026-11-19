@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "@/i18n/provider.tsx";
 
 /**
  * Scrolling organization strip at the bottom of the hero.
@@ -19,16 +20,19 @@ export const orgs: { name: string; file: string }[] = [
   { name: "Kivulini Women's Rights Organization", file: "kivulini" },
 ];
 
-const EXTS = ["svg", "png", "jpg", "webp"];
+// Most partner logos are shipped as PNG; try it first so the normal case does
+// not log avoidable 404s from probing SVG names that are not present.
+const EXTS = ["png", "svg", "jpg", "webp"];
 
 function Logo({ name, file }: { name: string; file: string }) {
   const [i, setI] = useState(0);
+  const { t } = useI18n();
   if (i >= EXTS.length) {
     return (
       <li className="flex h-10 shrink-0 items-center px-1.5 md:h-11 md:px-2">
         <span
           role="img"
-          aria-label={`${name} logo unavailable; organization name shown`}
+          aria-label={t("organizations.logoUnavailable", { name })}
           title={name}
           className="inline-flex max-w-40 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2 py-1.5 text-[11px] font-medium text-white/90 backdrop-blur-sm sm:max-w-none sm:px-2.5"
         >

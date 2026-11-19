@@ -1,5 +1,23 @@
-import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class ConversationTurnDto {
+  @IsIn(['user', 'assistant'])
+  role!: 'user' | 'assistant';
+
+  @IsString()
+  @MaxLength(2000)
+  content!: string;
+}
 
 export class AskAiDto {
   @ApiProperty({
@@ -16,4 +34,14 @@ export class AskAiDto {
   @IsOptional()
   @IsIn(['sw', 'en'])
   language?: 'sw' | 'en';
+
+  @ApiPropertyOptional({
+    type: [ConversationTurnDto],
+    description: 'Previous conversation turns used to resolve follow-up questions.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ConversationTurnDto)
+  context?: ConversationTurnDto[];
 }

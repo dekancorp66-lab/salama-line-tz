@@ -1,5 +1,21 @@
 import { IsIn } from 'class-validator';
+
+export const ASSIGNABLE_STATUSES = [
+  'NEW',
+  'PENDING',
+  'PENDING_REVIEW',
+  'ACCEPTED',
+  'ASSIGNED',
+  'IN_PROGRESS',
+  'ESCALATED',
+  'REFERRED',
+  'RESOLVED',
+  'CLOSED',
+  'CANCELLED',
+  'EXPIRED',
+] as const;
+
 export class UpdateHelpRequestStatusDto {
-  @IsIn(['ACCEPTED', 'IN_PROGRESS', 'REFERRED', 'CLOSED', 'CANCELLED'])
-  status: 'ACCEPTED'|'IN_PROGRESS'|'REFERRED'|'CLOSED'|'CANCELLED';
+  @IsIn(ASSIGNABLE_STATUSES)
+  status: (typeof ASSIGNABLE_STATUSES)[number];
 }

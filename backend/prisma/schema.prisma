@@ -9,18 +9,29 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  SUPER_ADMIN
   RESPONDER
   CONTENT_REVIEWER
+  CONTENT_MANAGER
+  SERVICE_MANAGER
+  AUDITOR
   PARTNER_ANALYST
+  USER
 }
 
 enum HelpRequestStatus {
+  NEW
   PENDING
+  PENDING_REVIEW
   ACCEPTED
+  ASSIGNED
   IN_PROGRESS
+  ESCALATED
   REFERRED
+  RESOLVED
   CLOSED
   CANCELLED
+  EXPIRED
 }
 
 enum HelpRequestPriority {
@@ -64,131 +75,324 @@ enum Channel {
   STAFF
 }
 
+model Institution {
+  id           String        @id @default(cuid())
+  name         String
+  code         String        @unique
+  districtCode String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  users        User[]
+  cases        HelpRequest[]
+
+  @@index([districtCode, isActive])
+}
+
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  passwordHash    String
-  displayName     String
-  role            UserRole @default(RESPONDER)
-  districtCode    String?
-  isActive        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  assignedCases   HelpRequest[] @relation("AssignedCases")
-  reviewedContent Content[] @relation("ContentReviewer")
-  auditEvents     AuditEvent[]
+  id                      String                @id @default(cuid())
+  email                   String                @unique
+  passwordHash            String
+  displayName             String
+  role                    UserRole              @default(RESPONDER)
+  districtCode            String?
+  // Institutional scope. Null preserves legacy district-only accounts.
+  institutionId           String?
+  isActive                Boolean               @default(false)
+  // Security metadata: no raw passwords, tokens, or contact details are stored.
+  failedLoginAttempts     Int                   @default(0)
+  lockedUntil             DateTime?
+  lastLoginAt             DateTime?
+  tokenVersion            Int                   @default(0)
+  passwordResetTokenHash  String?
+  passwordResetExpiresAt  DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  assignedCases           HelpRequest[]         @relation("AssignedCases")
+  reviewedContent         Content[]             @relation("ContentReviewer")
+  auditEvents             AuditEvent[]
+  responderProfile        ResponderProfile?
+  caseNotes               CaseNote[]
+  assignmentEventsAsActor CaseAssignmentEvent[] @relation("CaseAssignmentActor")
+  assignmentEventsFrom    CaseAssignmentEvent[] @relation("CaseAssignmentFrom")
+  assignmentEventsTo      CaseAssignmentEvent[] @relation("CaseAssignmentTo")
+  approvedKnowledge       AiKnowledgeSource[]   @relation("AiKnowledgeApprover")
+  escalationEvents        EscalationEvent[]     @relation("EscalationActor")
+  institution             Institution?         @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId])
 }
 
 model Content {
-  id             String        @id @default(cuid())
-  slug           String        @unique
-  title          String
-  language       String        @default("sw")
-  topic          String
-  shortText      String
-  fullText       String
-  sourceName     String
-  sourceUrl      String?
-  status         ContentStatus @default(DRAFT)
-  reviewerId     String?
-  reviewedAt     DateTime?
-  reviewNotes    String?
-  publishedAt    DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  reviewer       User?         @relation("ContentReviewer", fields: [reviewerId], references: [id])
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  language    String        @default("sw")
+  topic       String
+  shortText   String
+  fullText    String
+  sourceName  String
+  sourceUrl   String?
+  status      ContentStatus @default(DRAFT)
+  reviewerId  String?
+  reviewedAt  DateTime?
+  reviewNotes String?
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  reviewer    User?         @relation("ContentReviewer", fields: [reviewerId], references: [id])
+
   @@index([status, language, topic])
 }
 
 model ServiceDirectoryEntry {
-  id             String      @id @default(cuid())
-  name           String
-  type           ServiceType
-  districtCode   String
-  region         String
-  phonePublic    String?
-  address        String?
-  openingHours   String?
-  languages      String[]    @default([])
+  id              String      @id @default(cuid())
+  name            String
+  type            ServiceType
+  districtCode    String
+  region          String
+  phonePublic     String?
+  address         String?
+  openingHours    String?
+  languages       String[]    @default([])
   verificationOrg String
-  verifiedBy     String
-  verifiedAt     DateTime
-  expiresAt      DateTime?
-  isActive       Boolean     @default(false)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  verifiedBy      String
+  verifiedAt      DateTime
+  expiresAt       DateTime?
+  isActive        Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
   @@index([districtCode, type, isActive])
 }
 
 model HelpRequest {
-  id                 String             @id @default(cuid())
-  caseCode           String             @unique
-  topic              String
-  districtCode       String
+  id                  String                @id @default(cuid())
+  caseCode            String                @unique
+  topic               String
+  // Legacy/backward-compatible district identifier used for scoping and filters.
+  // For structured reports this is set to the canonical district ID (uppercase).
+  districtCode        String
+  // Structured Tanzania Mainland location (nullable for legacy records).
+  regionId            String?
+  regionName          String?
+  districtId          String?
+  districtName        String?
+  // Optional GPS coordinates, stored only when the reporter explicitly consented.
+  latitude            Float?
+  longitude           Float?
+  locationConsentGiven Boolean              @default(false)
+  // Institution explicitly authorised for this case. Null = unassigned legacy case.
+  institutionId       String?
   channel             Channel
-  status              HelpRequestStatus  @default(PENDING)
-  priority            HelpRequestPriority @default(NORMAL)
-  consentToContact    Boolean            @default(false)
-  contactCiphertext  String?
+  status              HelpRequestStatus     @default(PENDING)
+  priority            HelpRequestPriority   @default(NORMAL)
+  consentToContact    Boolean               @default(false)
+  contactCiphertext   String?
   contactHash         String?
+  // Free-text concern is stored ONLY after redaction; never raw message text.
+  concernSummary      String?
   assignedResponderId String?
-  createdAt           DateTime           @default(now())
+  createdAt           DateTime              @default(now())
   acceptedAt          DateTime?
+  assignedAt          DateTime?
+  escalatedAt         DateTime?
+  resolvedAt          DateTime?
   closedAt            DateTime?
+  expiresAt           DateTime?
   lastAlertAt         DateTime?
-  escalationCount     Int                @default(0)
-  assignedResponder   User?              @relation("AssignedCases", fields: [assignedResponderId], references: [id])
-  consents             ConsentRecord[]
-  referrals            Referral[]
+  escalationCount     Int                   @default(0)
+  assignedResponder   User?                 @relation("AssignedCases", fields: [assignedResponderId], references: [id])
+  institution         Institution?         @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  consents            ConsentRecord[]
+  referrals           Referral[]
+  notes               CaseNote[]
+  assignmentEvents    CaseAssignmentEvent[]
+  escalations         EscalationEvent[]
+  notifications       NotificationOutbox[]
+
   @@index([status, districtCode, priority, createdAt])
+  @@index([institutionId, status])
   @@index([contactHash])
+  @@index([assignedResponderId, status])
+  @@index([regionId, districtId])
 }
 
 model ConsentRecord {
-  id             String          @id @default(cuid())
-  helpRequestId  String
-  purpose        ConsentPurpose
-  decision       ConsentDecision
-  wordingVersion String
-  channel        Channel
-  createdAt      DateTime        @default(now())
-  helpRequest    HelpRequest     @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  id              String          @id @default(cuid())
+  helpRequestId   String
+  consentPolicyId String?
+  purpose         ConsentPurpose
+  decision        ConsentDecision
+  wordingVersion  String
+  channel         Channel
+  createdAt       DateTime        @default(now())
+  // A revocation is recorded in place; prior grants are never silently deleted.
+  revokedAt       DateTime?
+  helpRequest     HelpRequest     @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  consentPolicy   ConsentPolicy?  @relation(fields: [consentPolicyId], references: [id])
+
   @@index([helpRequestId, purpose, createdAt])
+  @@index([consentPolicyId])
 }
 
 model Referral {
-  id                String   @id @default(cuid())
-  helpRequestId     String
-  serviceEntryId    String?
-  status            String   @default("OFFERED")
-  consentGranted    Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  helpRequest       HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  id             String      @id @default(cuid())
+  helpRequestId  String
+  serviceEntryId String?
+  status         String      @default("OFFERED")
+  consentGranted Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  helpRequest    HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+
   @@index([helpRequestId])
 }
 
 model AuditEvent {
-  id            String   @id @default(cuid())
-  actorUserId   String?
-  action        String
-  resourceType  String
-  resourceId    String?
-  outcome       String
-  requestId     String?
-  createdAt     DateTime @default(now())
-  actor         User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  action       String
+  resourceType String
+  resourceId   String?
+  outcome      String
+  requestId    String?
+  createdAt    DateTime @default(now())
+  actor        User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
   @@index([createdAt, action])
   @@index([resourceType, resourceId])
 }
 
 model AnonymousMetric {
-  id          String   @id @default(cuid())
-  metricKey   String
+  id           String   @id @default(cuid())
+  metricKey    String
   districtCode String?
-  channel     Channel?
-  bucketDate  DateTime
-  count       Int      @default(0)
-  createdAt   DateTime @default(now())
+  channel      Channel?
+  bucketDate   DateTime
+  count        Int      @default(0)
+  createdAt    DateTime @default(now())
+
   @@unique([metricKey, districtCode, channel, bucketDate])
   @@index([metricKey, bucketDate])
+}
+
+// Permission scaffolding. Active authorization remains role-based until the
+// permission assignment APIs are implemented and reviewed.
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  role         UserRole
+  permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([role, permissionId])
+}
+
+model ResponderProfile {
+  userId         String   @id
+  districtCode   String?
+  available      Boolean  @default(false)
+  maxActiveCases Int      @default(10)
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([districtCode, available])
+}
+
+model ConsentPolicy {
+  id          String          @id @default(cuid())
+  version     String          @unique
+  wording     String
+  effectiveAt DateTime        @default(now())
+  revokedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  records     ConsentRecord[]
+}
+
+// Notes must contain case metadata only, never names, ages, raw phone numbers,
+// message text, or identifying details.
+model CaseNote {
+  id            String      @id @default(cuid())
+  helpRequestId String
+  authorId      String
+  note          String
+  createdAt     DateTime    @default(now())
+  helpRequest   HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  author        User        @relation(fields: [authorId], references: [id])
+
+  @@index([helpRequestId, createdAt])
+}
+
+model CaseAssignmentEvent {
+  id              String      @id @default(cuid())
+  helpRequestId   String
+  fromResponderId String?
+  toResponderId   String?
+  actorId         String
+  reason          String?
+  createdAt       DateTime    @default(now())
+  helpRequest     HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  actor           User        @relation("CaseAssignmentActor", fields: [actorId], references: [id])
+  fromResponder   User?       @relation("CaseAssignmentFrom", fields: [fromResponderId], references: [id])
+  toResponder     User?       @relation("CaseAssignmentTo", fields: [toResponderId], references: [id])
+
+  @@index([helpRequestId, createdAt])
+}
+
+// Escalations are recorded as metadata only. actorId is null for system sweeps.
+// No destination or message body is stored here; see NotificationOutbox.
+model EscalationEvent {
+  id              String      @id @default(cuid())
+  helpRequestId   String
+  actorId         String?
+  reason          String?
+  escalationCount Int
+  createdAt       DateTime    @default(now())
+  helpRequest     HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+  actor           User?       @relation("EscalationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([helpRequestId, createdAt])
+}
+
+// Outbox records never store raw destinations or message bodies.
+model NotificationOutbox {
+  id              String       @id @default(cuid())
+  helpRequestId   String?
+  channel         Channel
+  destinationHash String?
+  templateKey     String
+  status          String       @default("PENDING")
+  attempts        Int          @default(0)
+  nextAttemptAt   DateTime?
+  lastError       String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  helpRequest     HelpRequest? @relation(fields: [helpRequestId], references: [id], onDelete: SetNull)
+
+  @@index([status, nextAttemptAt])
+}
+
+model AiKnowledgeSource {
+  id           String    @id @default(cuid())
+  title        String
+  sourceType   String
+  sourceUrl    String?
+  jurisdiction String    @default("MAINLAND_TANZANIA")
+  version      String
+  contentHash  String
+  approved     Boolean   @default(false)
+  approvedById String?
+  approvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  approvedBy   User?     @relation("AiKnowledgeApprover", fields: [approvedById], references: [id])
+
+  @@unique([sourceType, version, contentHash])
+  @@index([approved, jurisdiction])
 }

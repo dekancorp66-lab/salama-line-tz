@@ -6,11 +6,25 @@ import { ApiTags } from '@nestjs/swagger';
 export class IntegrationsController {
   @Get('status')
   status() {
+    // These Nest adapters are placeholders by design. Credentials alone do not
+    // make a channel operational: signature verification, replay protection and
+    // delivery handling must be implemented and verified first. Report only facts.
+    const has = (key: string) => Boolean(process.env[key]?.trim());
+    const disabled = (key: string) => process.env[key]?.trim() === 'disabled';
+    const state = (providerKey: string, credentials: boolean) => ({
+      status: disabled(providerKey)
+        ? 'disabled'
+        : credentials
+          ? 'credentials-present-adapter-pending'
+          : 'adapter-not-configured',
+      configured: false,
+      operational: false,
+    });
     return {
-      ussd: 'adapter-not-configured',
-      sms: process.env.SMS_PROVIDER === 'disabled' ? 'disabled' : 'configured-needs-verification',
-      whatsapp: process.env.WHATSAPP_PROVIDER === 'disabled' ? 'disabled' : 'configured-needs-verification',
-      note: 'Provider webhooks require provider-specific signature verification before production use.',
+      ussd: { status: 'adapter-not-configured', configured: false, operational: false },
+      sms: state('SMS_PROVIDER', has('SMS_PROVIDER') && has('SMS_API_KEY')),
+      whatsapp: state('WHATSAPP_PROVIDER', has('WHATSAPP_PROVIDER') && has('WHATSAPP_TOKEN')),
+      note: 'No channel is represented as operational until its provider adapter, signature verification and replay protection are implemented and verified.',
     };
   }
 

@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
+/* Tailwind v4 follows the explicit theme attribute so `dark:` utilities and
+   the CSS variables below always agree. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --brand-pink: #f03486;
   --brand-pink-hover: #d52270;
+  --brand-fill: #d52270;
+  --brand-fill-hover: #b91b60;
   --brand-pink-soft: #fff0f6;
   --brand-pink-line: #f8c5dc;
   --paper: #fffdfb;
@@ -12,12 +18,45 @@
   --wash: #f8f3f5;
   --soft: #fcf8f9;
   --inverse: #211c20;
+  --on-dark: #fffdfb;
   --space-section: clamp(4rem, 8vw, 7rem);
   --radius-card: 1.5rem;
   --radius-panel: 1.875rem;
   --shadow-soft: 0 12px 34px rgb(48 27 38 / 7%);
   --shadow-panel: 0 22px 70px rgb(48 27 38 / 12%);
   --focus-ring: 0 0 0 3px rgb(240 52 134 / 24%);
+  color-scheme: light;
+}
+
+/* Dark theme keeps the SalamaLine pink identity while darkening every surface.
+   --inverse stays dark in both themes because it is used for the video hero. */
+:root[data-theme="dark"] {
+  --brand-pink: #ff8cc2;
+  --brand-pink-hover: #ffadd6;
+  --brand-fill: #d42776;
+  --brand-fill-hover: #e8428f;
+  --brand-pink-soft: #4a273d;
+  --brand-pink-line: #8d4c6d;
+  /* Lifted from near-black to a soft charcoal so text and panels stay legible
+     without the heavy, "too dark" feel of the previous palette. */
+  --paper: #2a2431;
+  --ink: #fff9fd;
+  --muted: #ded3dd;
+  --line: #5a4b60;
+  --wash: #342c3b;
+  --soft: #302838;
+  --inverse: #17131a;
+  --shadow-soft: 0 12px 34px rgb(0 0 0 / 22%);
+  --shadow-panel: 0 22px 70px rgb(0 0 0 / 32%);
+  --focus-ring: 0 0 0 3px rgb(255 140 194 / 32%);
+  color-scheme: dark;
+}
+
+/* Fallback for the brief moment before the bootstrap script runs. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+  }
 }
 
 @theme {
@@ -34,6 +73,8 @@
   --color-pink-hover: var(--brand-pink-hover);
   --color-pink-soft: var(--brand-pink-soft);
   --color-pink-line: var(--brand-pink-line);
+  --color-brand-fill: var(--brand-fill);
+  --color-on-dark: var(--on-dark);
   --radius-pill: 999px;
 }
 
@@ -46,12 +87,21 @@
 
   body {
     min-width: 320px;
+    overflow-x: hidden;
     background: var(--paper);
     color: var(--ink);
+    transition: background-color 160ms ease, color 160ms ease;
     font-family: var(--font-sans);
     font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
   }
 
   h1,
@@ -91,12 +141,12 @@
 }
 
 .brand-fill {
-  background-color: var(--brand-pink);
+  background-color: var(--brand-fill);
   transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .brand-fill:hover {
-  background-color: var(--brand-pink-hover);
+  background-color: var(--brand-fill-hover);
   box-shadow: 0 7px 18px rgb(143 32 76 / 20%);
 }
 
@@ -121,6 +171,7 @@
 .marquee-track { animation: marquee-scroll 20s linear infinite; }
 .marquee:hover .marquee-track { animation-play-state: paused; }
 
+/* Hero slideshow uses crossfading images; reduced motion is handled in React/CSS transitions. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

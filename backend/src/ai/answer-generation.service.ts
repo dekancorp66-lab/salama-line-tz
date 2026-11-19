@@ -43,6 +43,7 @@ export class AnswerGenerationService {
     language: Language,
     retrieved: RetrievedKnowledge[],
     safetyRules: Array<{ rule: string; action: string }>,
+    context: Array<{ role: "user" | "assistant"; content: string }> = [],
   ): Promise<GeneratedAnswer> {
     const intent = this.detectIntent(question);
     const evidence = this.relevantEvidence(intent, retrieved);
@@ -62,19 +63,28 @@ export class AnswerGenerationService {
     const legalReferences = legalIntents.has(intent)
       ? this.references(evidence)
       : [];
-    const hasMatchedQa = evidence.some(
-      ({ record }) =>
-        (record.type === "example_qa" || record.id.startsWith("QA")) &&
-        (evidence.find((item) => item.record.id === record.id)?.score ?? 0) >=
-          0.65,
-    );
-    const sources =
+    const generatedSources =
       ["health_information", "support_directory", "participation"].includes(
         intent,
-      ) ||
-      (intent === "general" && !hasMatchedQa)
+      )
         ? []
         : this.sources(evidence, intent);
+    // A general in-scope answer still needs a visible trail back to the
+    // loaded material it was built from.
+    const sources =
+      intent === "general" &&
+      evidence.length &&
+      generatedSources.length === 0
+        ? [
+            {
+              id: evidence[0].record.id,
+              name:
+                evidence[0].record.source_title ||
+                evidence[0].record.title ||
+                "Loaded SalamaLine guidance",
+            },
+          ]
+        : generatedSources;
     const urgent =
       this.isUrgent(question) ||
       (intent === "health_information" &&
@@ -88,6 +98,7 @@ export class AnswerGenerationService {
       language,
       evidence,
       safetyRules,
+      context,
     );
     if (llmAnswer) {
       return {
@@ -118,9 +129,7 @@ export class AnswerGenerationService {
         ? "safety_guidance"
         : intent === "health_information" || intent === "support_directory"
           ? "no_reliable_answer"
-          : intent === "greeting" ||
-              intent === "platform_capability" ||
-              (intent !== "general" && evidence.length)
+          : evidence.length
             ? "answered"
             : "no_reliable_answer",
       generatedBy: "grounded_fallback",
@@ -399,10 +408,15 @@ export class AnswerGenerationService {
         };
       }
       if (intent === "support" || intent === "child_safety") {
+        const self = this.isSelfFocused(question);
         return {
           directAnswer: sw
-            ? "Pole kwa hali hii. Mtu anayehitaji msaada anaweza kuzungumza na mtu mzima anayemwamini au afisa ustawi wa jamii; si lazima asimulie kila kitu hapa."
-            : "I’m sorry this is happening. The person can speak with a trusted adult or social welfare officer; they do not need to share all the details here.",
+            ? self
+              ? "Pole kwa hali hii. Unaweza kuzungumza na mtu mzima unayemwamini au afisa ustawi wa jamii; si lazima usimulie kila kitu hapa."
+              : "Pole kwa hali hii. Mtu anayehitaji msaada anaweza kuzungumza na mtu mzima anayemwamini au afisa ustawi wa jamii; si lazima asimulie kila kitu hapa."
+            : self
+              ? "I’m sorry this is happening. You can speak with a trusted adult or social welfare officer; you do not need to share all the details here."
+              : "I’m sorry this is happening. The person can speak with a trusted adult or social welfare officer; they do not need to share all the details here.",
           explanation: sw
             ? "Sina ushahidi wa kutosha kuthibitisha huduma maalumu katika eneo lako, na sitabuni mawasiliano."
             : "I do not have enough verified information to name a local service, and I will not invent contact details.",
@@ -596,13 +610,18 @@ export class AnswerGenerationService {
           (item) => item.record.id.startsWith("QA") && item.score >= 0.65,
         )?.record;
         const answer = qa?.[language === "sw" ? "answer_sw" : "answer_en"];
+        const self = this.isSelfFocused(question);
         return {
           directAnswer:
             typeof answer === "string"
               ? answer
               : sw
-                ? "Msikilize bila kumhukumu, mwambie kwamba si kosa lake, na muulize anahitaji msaada gani sasa."
-                : "Listen without judgment, reassure them that they are not to blame, and ask what support they need now.",
+                ? self
+                  ? "Unastahili kusikilizwa na kuaminiwa. Mwambie mtu mzima unayemwamini au afisa ustawi wa jamii kile unachojisikia salama kusema; si kosa lako."
+                  : "Msikilize bila kumhukumu, mwambie kwamba si kosa lake, na muulize anahitaji msaada gani sasa."
+                : self
+                  ? "You deserve to be heard and believed. Tell a trusted adult or social welfare officer only what you feel safe sharing; it is not your fault."
+                  : "Listen without judgment, reassure them that they are not to blame, and ask what support they need now.",
           explanation: sw
             ? "Mtu mzima unayemwamini, afisa ustawi wa jamii au mamlaka husika wanaweza kusaidia. Chagua unachojisikia salama kufanya; si lazima utoe taarifa binafsi hapa."
             : "A trusted adult, social welfare officer, or appropriate local authority may be able to help. Choose what feels safe; you do not need to share personal details here.",
@@ -624,6 +643,8 @@ export class AnswerGenerationService {
         const qaAnswer = qa?.[language === "sw" ? "answer_sw" : "answer_en"];
         if (typeof qaAnswer === "string")
           return { directAnswer: qaAnswer, explanation: "" };
+        const grounded = this.generalEvidenceAnswer(language, evidence);
+        if (grounded) return grounded;
         return {
           directAnswer: sw
             ? "Sina taarifa za kutosha zilizothibitishwa kujibu swali hili kwa uhakika."
@@ -634,6 +655,43 @@ export class AnswerGenerationService {
         };
       }
     }
+  }
+
+  /**
+   * Turn otherwise-unhandled but genuinely relevant evidence into a useful,
+   * clearly attributed answer instead of a blanket refusal. Legal citations
+   * are removed here because the reference list, not free text, owns them.
+   */
+  private generalEvidenceAnswer(
+    language: Language,
+    evidence: RetrievedKnowledge[],
+  ): Pick<GeneratedAnswer, "directAnswer" | "explanation"> | null {
+    const usable = evidence
+      .filter((item) => typeof item.text === "string" && item.text.trim())
+      .sort((a, b) => {
+        const aVerified = a.record.verified === true ? 1 : 0;
+        const bVerified = b.record.verified === true ? 1 : 0;
+        return bVerified - aVerified || b.score - a.score;
+      });
+    const best = usable[0];
+    if (!best) return null;
+    const snippet = best.text
+      .replace(/\b(?:article|section|ibara|kifungu)\s+\d+[\w().–-]*/gi, "")
+      .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 380);
+    if (snippet.length < 25) return null;
+    return {
+      directAnswer:
+        language === "sw"
+          ? `Taarifa iliyopakiwa inasema: ${snippet}`
+          : `The loaded guidance says: ${snippet}`,
+      explanation:
+        language === "sw"
+          ? "Hii ni taarifa ya jumla kutoka chanzo kilichothibitishwa. Kwa hali yako maalumu, zungumza na mtaalamu au mamlaka husika; huhitaji kushiriki taarifa binafsi hapa."
+          : "This is general information from a verified source. For your specific situation, speak with an appropriate professional or authority; you do not need to share personal details here.",
+    };
   }
 
   private references(evidence: RetrievedKnowledge[]): AiReference[] {
@@ -799,6 +857,7 @@ export class AnswerGenerationService {
     language: Language,
     evidence: RetrievedKnowledge[],
     safetyRules: Array<{ rule: string; action: string }>,
+    context: Array<{ role: "user" | "assistant"; content: string }>,
   ): Promise<Pick<
     GeneratedAnswer,
     "directAnswer" | "explanation" | "guidance"
@@ -824,6 +883,12 @@ export class AnswerGenerationService {
         // contact details, health data, or sensitive case disclosure.
         input: JSON.stringify({
           topic: intent,
+          // Short, redacted history helps the provider resolve "what if she is
+          // 14?" style follow-ups against the subject already under discussion.
+          conversation: context.slice(-4).map(({ role, content }) => ({
+            role,
+            content: this.minimizeProviderQuery(content).slice(0, 400),
+          })),
           evidence: verifiedEvidence.map(({ record, text }) => ({
             text: text.slice(0, 1800),
             source:
@@ -971,6 +1036,12 @@ export class AnswerGenerationService {
       .replace(/\b(?:my address is|anwani yangu ni)\s+[^,.!?]+/giu, "[address removed]")
       .replace(/[\u0000-\u001f\u007f]/g, " ")
       .slice(0, 800);
+  }
+
+  private isSelfFocused(question: string): boolean {
+    return /\b(?:i|me|my|mine|myself|nina|nime|nakwenda|kwangu|yangu|mimi)\b/i.test(
+      question,
+    );
   }
 
   private isUrgent(question: string): boolean {

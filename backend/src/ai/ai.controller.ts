@@ -42,6 +42,6 @@ export class AiController {
       "Retrieved answer, language, source references and answer status.",
   })
   ask(@Body() dto: AskAiDto) {
-    return this.aiService.ask(dto.question.trim(), dto.language);
+    return this.aiService.ask(dto.question.trim(), dto.language, dto.context);
   }
 }

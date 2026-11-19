@@ -60,7 +60,7 @@ describe("OpenAI provider integration", () => {
     mockModerationsCreate.mockResolvedValue({ results: [{ flagged: false }] });
   }
 
-  it("uses the user's sanitized query with verified evidence and structured output", async () => {
+  it("sends only the topic, verified evidence, and safeguards to OpenAI", async () => {
     mockSafeAnswer();
     const question = "Does the Constitution recognize a right to education?";
     const result = await service.ask(question, "en");
@@ -74,7 +74,8 @@ describe("OpenAI provider integration", () => {
     expect(request.text.format.type).toBe("json_schema");
     const transmitted = JSON.stringify(request.input);
     expect(transmitted).toContain("constitution_article_11");
-    expect(transmitted).toContain(question);
+    // The raw question may contain personal details; it is never transmitted.
+    expect(transmitted).not.toContain(question);
     expect(transmitted).not.toContain('"question"');
     expect(result.legalReferences.every((reference) => reference.verified)).toBe(
       true,
@@ -89,17 +90,15 @@ describe("OpenAI provider integration", () => {
     expect(result.directAnswer).toMatch(/haki.*elimu/i);
   });
 
-  it("redacts identifying details from the query sent to OpenAI", async () => {
-    mockSafeAnswer("A child has a right to education.");
-    await service.ask(
+  it("keeps personal disclosures local instead of sending them to OpenAI", async () => {
+    const result = await service.ask(
       "My sister Amina can she attend school? Contact me at 0712345678",
       "en",
     );
-    const input = JSON.stringify(mockResponsesCreate.mock.calls[0][0].input);
-    expect(input).toContain("[person removed]");
-    expect(input).toContain("[number removed]");
-    expect(input).not.toContain("Amina");
-    expect(input).not.toContain("0712345678");
+    expect(result.generatedBy).toBe("grounded_fallback");
+    expect(mockResponsesCreate).not.toHaveBeenCalled();
+    expect(mockModerationsCreate).not.toHaveBeenCalled();
+    expect(JSON.stringify(result)).not.toMatch(/Amina|0712345678/);
   });
 
   it("keeps personal disclosures, urgent risks, and health cases local", async () => {
