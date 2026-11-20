@@ -1,35 +1,28 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  buildNeutralResetAction,
-  buildReturnResetAction,
   isSensitiveRoute,
+  NEUTRAL_HREF,
   NEUTRAL_ROUTE,
+  RETURN_HREF,
   RETURN_ROUTE,
 } from './quickExit';
 
-describe('Quick Exit navigation reset', () => {
-  it('leaves only the neutral screen in the navigation stack', () => {
-    const action = buildNeutralResetAction();
-    assert.deepEqual(action, {
-      index: 0,
-      routes: [{ name: NEUTRAL_ROUTE }],
-    });
+describe('Quick Exit navigation targets', () => {
+  it('uses root-safe replace hrefs instead of partial reset actions', () => {
+    assert.equal(NEUTRAL_HREF, '/neutral');
+    assert.equal(RETURN_HREF, '/');
   });
 
-  it('never keeps a sensitive screen in the reset history', () => {
-    const action = buildNeutralResetAction();
-    assert.equal(action.routes.length, 1);
-    assert.equal(isSensitiveRoute(action.routes[0].name), false);
+  it('keeps the neutral destination non-sensitive', () => {
+    assert.equal(NEUTRAL_ROUTE, 'neutral');
+    assert.equal(isSensitiveRoute(NEUTRAL_ROUTE), false);
+    assert.equal(isSensitiveRoute(NEUTRAL_HREF), false);
   });
 
-  it('builds a fresh normal stack when the user explicitly returns', () => {
-    const action = buildReturnResetAction();
-    assert.deepEqual(action, {
-      index: 0,
-      routes: [{ name: RETURN_ROUTE }],
-    });
+  it('returns to the fresh index route', () => {
     assert.equal(RETURN_ROUTE, 'index');
+    assert.notEqual(RETURN_HREF, NEUTRAL_HREF);
   });
 });
 
