@@ -1,27 +1,12 @@
+/** Internal route name used by the conditional root navigator. */
 export const NEUTRAL_ROUTE = 'neutral';
 
-export type ResetAction = {
-  index: number;
-  routes: Array<{ name: string }>;
-};
+/** Root-safe hrefs used by `router.replace` for Quick Exit navigation. */
+export const NEUTRAL_HREF = '/neutral';
+export const RETURN_HREF = '/';
 
+/** Fresh normal-stack route reached when the user explicitly returns. */
 export const RETURN_ROUTE = 'index';
-
-/** Builds a navigation reset that leaves only the neutral screen in history. */
-export function buildNeutralResetAction(routeName: string = NEUTRAL_ROUTE): ResetAction {
-  return {
-    index: 0,
-    routes: [{ name: routeName }],
-  };
-}
-
-/** Builds the fresh stack used when the user explicitly returns to the app. */
-export function buildReturnResetAction(routeName: string = RETURN_ROUTE): ResetAction {
-  return {
-    index: 0,
-    routes: [{ name: routeName }],
-  };
-}
 
 /** Routes that may contain sensitive content and must be covered on background. */
 const SENSITIVE_ROUTE_FRAGMENTS = [
@@ -39,7 +24,7 @@ const SENSITIVE_ROUTE_FRAGMENTS = [
 ];
 
 export function isSensitiveRoute(routeName: string | undefined): boolean {
-  if (!routeName || routeName === NEUTRAL_ROUTE) return false;
+  if (!routeName || routeName === NEUTRAL_ROUTE || routeName === NEUTRAL_HREF) return false;
   const normalized = routeName.toLowerCase();
   return SENSITIVE_ROUTE_FRAGMENTS.some((fragment) => normalized.includes(fragment));
 }
