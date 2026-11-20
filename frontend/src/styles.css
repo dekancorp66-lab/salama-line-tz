@@ -4,19 +4,21 @@
    the CSS variables below always agree. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* Light display: a muted, dim pink. The surfaces carry only a faint pink tint
+   and the accents are softened so the theme reads warm without being loud. */
 :root {
-  --brand-pink: #f03486;
-  --brand-pink-hover: #d52270;
-  --brand-fill: #d52270;
-  --brand-fill-hover: #b91b60;
-  --brand-pink-soft: #fff0f6;
-  --brand-pink-line: #f8c5dc;
-  --paper: #fffdfb;
+  --brand-pink: #b0577f;
+  --brand-pink-hover: #964465;
+  --brand-fill: #a94e75;
+  --brand-fill-hover: #8f3f61;
+  --brand-pink-soft: #fdf3f7;
+  --brand-pink-line: #e9c9d7;
+  --paper: #fffafd;
   --ink: #282328;
   --muted: #6e6670;
-  --line: #ece4e7;
-  --wash: #f8f3f5;
-  --soft: #fcf8f9;
+  --line: #eddee5;
+  --wash: #faf3f6;
+  --soft: #fdf7fa;
   --inverse: #211c20;
   --on-dark: #fffdfb;
   --space-section: clamp(4rem, 8vw, 7rem);
@@ -24,7 +26,7 @@
   --radius-panel: 1.875rem;
   --shadow-soft: 0 12px 34px rgb(48 27 38 / 7%);
   --shadow-panel: 0 22px 70px rgb(48 27 38 / 12%);
-  --focus-ring: 0 0 0 3px rgb(240 52 134 / 24%);
+  --focus-ring: 0 0 0 3px rgb(176 87 127 / 22%);
   color-scheme: light;
 }
 
