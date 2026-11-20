@@ -92,7 +92,7 @@ The app bar is shared by all `ScreenHeader` screens and onboarding: hamburger at
 
 | # | Step | Expected | Status |
 |---|------|----------|--------|
-| 7A.1 | Check header on Home, Learn, Support, Requests, Profile, Settings, AI and onboarding | Three-line hamburger at left, centered app name, Sun + Moon control at right; same alignment, safe-area spacing and touch targets; no content overlap | Not executed |
+| 7A.1 | Check header on Home, Learn, Support, Requests, Profile, Settings, AI and onboarding | Three-line hamburger at left, centered app name, Sun + Moon control at right. All header/menu icons are drawn with Views or system text glyphs, so they stay visible even if the Ionicons font download fails. Same alignment, safe-area spacing and touch targets; no content overlap | Not executed |
 | 7A.2 | Tap the top-left hamburger | Menu opens; main screens are listed; no duplicate tab/navigation system appears | Not executed |
 | 7A.3 | Tap a menu item, the dimmed area, the close icon and Android back | Menu closes and the chosen in-app route opens; no privileged entry point is present | Not executed |
 | 7A.4 | Open the menu in dark mode | Menu panel, borders, icons and text use dark tokens | Not executed |

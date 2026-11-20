@@ -10,7 +10,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MENU_LINKS, isMenuLinkAllowed } from '../navigation/menu';
@@ -96,7 +95,7 @@ export function AppHeader({ style }: AppHeaderProps) {
                 onPress={closeMenu}
                 style={({ pressed }) => [styles.closeControl, pressed && styles.pressed]}
               >
-                <Ionicons name="close-outline" size={20} color={theme.colors.brandStrong} />
+                <Text style={styles.closeGlyph}>×</Text>
               </Pressable>
             </View>
 
@@ -109,13 +108,9 @@ export function AppHeader({ style }: AppHeaderProps) {
                   onPress={() => goTo(link.href)}
                   style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
                 >
-                  <Ionicons name={link.icon as never} size={19} color={theme.colors.brand} />
+                  <View style={styles.linkDot} />
                   <Text style={styles.linkLabel}>{t(link.labelKey)}</Text>
-                  <Ionicons
-                    name="chevron-forward-outline"
-                    size={17}
-                    color={theme.colors.muted}
-                  />
+                  <Text style={styles.chevron}>›</Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -182,6 +177,12 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  closeGlyph: {
+    fontSize: 24,
+    lineHeight: 26,
+    fontWeight: '600',
+    color: theme.colors.brandStrong,
+  },
   pressed: { opacity: 0.75 },
   modalSafe: {
     flex: 1,
@@ -233,10 +234,21 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: theme.radius.md,
   },
   linkPressed: { backgroundColor: theme.colors.brandSoft },
+  linkDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.brand,
+  },
   linkLabel: {
     flex: 1,
     ...theme.typography.label,
     color: theme.colors.ink,
+  },
+  chevron: {
+    fontSize: 20,
+    lineHeight: 22,
+    color: theme.colors.muted,
   },
   note: {
     ...theme.typography.caption,

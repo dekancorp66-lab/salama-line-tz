@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTranslation } from 'react-i18next';
 import { useTheme, useStyles, type AppTheme } from '../theme';
 import { getThemeToggleTarget } from '../theme/toggle';
@@ -12,10 +11,35 @@ const SLOT = 34;
 const GAP = 2;
 const INSET = 3;
 
+function MoonGlyph({ color, cutout }: { color: string; cutout: string }) {
+  return (
+    <View style={glyphStyles.moonWrap}>
+      <View style={[glyphStyles.moonDisc, { backgroundColor: color }]} />
+      <View style={[glyphStyles.moonCutout, { backgroundColor: cutout }]} />
+    </View>
+  );
+}
+
+function SunGlyph({ color }: { color: string }) {
+  return (
+    <View style={glyphStyles.sunWrap}>
+      <View style={[glyphStyles.sunRayTop, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunRayBottom, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunRayLeft, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunRayRight, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunCorner, glyphStyles.sunCornerTL, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunCorner, glyphStyles.sunCornerTR, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunCorner, glyphStyles.sunCornerBL, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunCorner, glyphStyles.sunCornerBR, { backgroundColor: color }]} />
+      <View style={[glyphStyles.sunCore, { backgroundColor: color }]} />
+    </View>
+  );
+}
+
 /**
  * Top-right appearance switch. Both Sun and Moon are visible; the icon for the
- * mode the user will get is highlighted. It uses the single persisted theme
- * store: Moon is active in light mode, Sun is active in dark mode.
+ * mode the user will get is highlighted. These glyphs are drawn with Views, so
+ * the theme control stays clear even when the icon font cannot be downloaded.
  */
 export function ThemeToggle() {
   const { t } = useTranslation();
@@ -36,6 +60,9 @@ export function ThemeToggle() {
     outputRange: [0, SLOT + GAP],
   });
   const isDark = theme.resolved === 'dark';
+  const active = theme.colors.brandStrong;
+  const inactive = theme.colors.muted;
+  const cutout = isDark ? theme.colors.brandSoft : theme.colors.paper;
 
   return (
     <Pressable
@@ -49,18 +76,10 @@ export function ThemeToggle() {
       <Animated.View style={[styles.highlight, { transform: [{ translateX: highlightX }] }]} />
       <View style={styles.slots}>
         <View style={styles.slot}>
-          <Ionicons
-            name="moon-outline"
-            size={19}
-            color={isDark ? theme.colors.muted : theme.colors.brandStrong}
-          />
+          <MoonGlyph color={isDark ? inactive : active} cutout={cutout} />
         </View>
         <View style={styles.slot}>
-          <Ionicons
-            name="sunny-outline"
-            size={19}
-            color={isDark ? theme.colors.brandStrong : theme.colors.muted}
-          />
+          <SunGlyph color={isDark ? active : inactive} />
         </View>
       </View>
     </Pressable>
@@ -101,4 +120,21 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.brandLine,
   },
+});
+
+const glyphStyles = StyleSheet.create({
+  moonWrap: { width: 20, height: 20, overflow: 'hidden' },
+  moonDisc: { position: 'absolute', left: 1, top: 1, width: 18, height: 18, borderRadius: 9 },
+  moonCutout: { position: 'absolute', left: 7, top: 0, width: 16, height: 16, borderRadius: 8 },
+  sunWrap: { width: 20, height: 20 },
+  sunRayTop: { position: 'absolute', left: 9, top: 0, width: 2, height: 4, borderRadius: 1 },
+  sunRayBottom: { position: 'absolute', left: 9, top: 16, width: 2, height: 4, borderRadius: 1 },
+  sunRayLeft: { position: 'absolute', left: 0, top: 9, width: 4, height: 2, borderRadius: 1 },
+  sunRayRight: { position: 'absolute', left: 16, top: 9, width: 4, height: 2, borderRadius: 1 },
+  sunCorner: { position: 'absolute', width: 3, height: 3, borderRadius: 1.5 },
+  sunCornerTL: { left: 2, top: 2 },
+  sunCornerTR: { left: 15, top: 2 },
+  sunCornerBL: { left: 2, top: 15 },
+  sunCornerBR: { left: 15, top: 15 },
+  sunCore: { position: 'absolute', left: 5.5, top: 5.5, width: 9, height: 9, borderRadius: 5 },
 });
