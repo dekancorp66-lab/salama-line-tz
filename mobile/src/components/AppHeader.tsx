@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MENU_LINKS, isMenuLinkAllowed } from '../navigation/menu';
 import { useTheme, useStyles, type AppTheme } from '../theme';
-import { ThemeToggle } from './ThemeToggle';
+import { THEME_TOGGLE_WIDTH, ThemeToggle } from './ThemeToggle';
 
 interface AppHeaderProps {
   style?: StyleProp<ViewStyle>;
@@ -54,7 +54,11 @@ export function AppHeader({ style }: AppHeaderProps) {
             onPress={openMenu}
             style={({ pressed }) => [styles.control, pressed && styles.pressed]}
           >
-            <Ionicons name="menu-outline" size={21} color={theme.colors.brandStrong} />
+            <View style={styles.hamburger}>
+              <View style={styles.hamburgerLine} />
+              <View style={styles.hamburgerLine} />
+              <View style={styles.hamburgerLine} />
+            </View>
           </Pressable>
         </View>
 
@@ -134,7 +138,7 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     minHeight: theme.touchTarget,
   },
   side: {
-    width: theme.touchTarget,
+    width: THEME_TOGGLE_WIDTH,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },

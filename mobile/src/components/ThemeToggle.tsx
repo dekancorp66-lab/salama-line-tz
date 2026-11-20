@@ -5,9 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { useTheme, useStyles, type AppTheme } from '../theme';
 import { getThemeToggleTarget } from '../theme/toggle';
 
+/** Width is shared with AppHeader so the centered app name stays centered. */
+export const THEME_TOGGLE_WIDTH = 76;
+
+const SLOT = 34;
+const GAP = 2;
+const INSET = 3;
+
 /**
- * Top-right appearance switch. It uses the single persisted theme store and
- * shows the action available to the user: Moon in light mode, Sun in dark mode.
+ * Top-right appearance switch. Both Sun and Moon are visible; the icon for the
+ * mode the user will get is highlighted. It uses the single persisted theme
+ * store: Moon is active in light mode, Sun is active in dark mode.
  */
 export function ThemeToggle() {
   const { t } = useTranslation();
@@ -23,67 +31,74 @@ export function ThemeToggle() {
     }).start();
   }, [progress, theme.resolved]);
 
-  const moonOpacity = progress.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
-  const sunOpacity = progress.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
-  const moonRotation = progress.interpolate({
+  const highlightX = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '-90deg'],
+    outputRange: [0, SLOT + GAP],
   });
-  const sunRotation = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['90deg', '0deg'],
-  });
+  const isDark = theme.resolved === 'dark';
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={
-        theme.resolved === 'dark' ? t('header.themeToLight') : t('header.themeToDark')
-      }
+      accessibilityLabel={isDark ? t('header.themeToLight') : t('header.themeToDark')}
       accessibilityHint={t('header.themeHint')}
       hitSlop={8}
       onPress={() => theme.setMode(getThemeToggleTarget(theme.resolved))}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <Animated.View
-        style={[styles.icon, { opacity: moonOpacity, transform: [{ rotate: moonRotation }] }]}
-      >
-        <Ionicons name="moon-outline" size={20} color={theme.colors.brandStrong} />
-      </Animated.View>
-      <Animated.View
-        style={[
-          styles.icon,
-          styles.iconOverlay,
-          { opacity: sunOpacity, transform: [{ rotate: sunRotation }] },
-        ]}
-      >
-        <Ionicons name="sunny-outline" size={20} color={theme.colors.brandStrong} />
-      </Animated.View>
+      <Animated.View style={[styles.highlight, { transform: [{ translateX: highlightX }] }]} />
+      <View style={styles.slots}>
+        <View style={styles.slot}>
+          <Ionicons
+            name="moon-outline"
+            size={19}
+            color={isDark ? theme.colors.muted : theme.colors.brandStrong}
+          />
+        </View>
+        <View style={styles.slot}>
+          <Ionicons
+            name="sunny-outline"
+            size={19}
+            color={isDark ? theme.colors.brandStrong : theme.colors.muted}
+          />
+        </View>
+      </View>
     </Pressable>
   );
 }
 
 const makeStyles = (theme: AppTheme) => StyleSheet.create({
   button: {
-    width: theme.touchTarget,
+    width: THEME_TOGGLE_WIDTH,
     height: theme.touchTarget,
     borderRadius: theme.radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: theme.colors.brandSoft,
     borderWidth: 1,
     borderColor: theme.colors.brandLine,
+    paddingHorizontal: INSET,
+    paddingVertical: INSET,
   },
   pressed: { opacity: 0.75 },
-  icon: {
-    width: theme.touchTarget,
-    height: theme.touchTarget,
+  slots: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: GAP,
+  },
+  slot: {
+    width: SLOT,
+    height: SLOT,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconOverlay: {
+  highlight: {
     position: 'absolute',
-    top: 0,
-    left: 0,
+    top: INSET,
+    left: INSET,
+    width: SLOT,
+    height: SLOT,
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.paper,
+    borderWidth: 1,
+    borderColor: theme.colors.brandLine,
   },
 });
