@@ -1,8 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { Stack, useNavigationContainerRef } from 'expo-router';
+import { Stack } from 'expo-router';
 import { AppProviders } from '../src/providers/AppProviders';
 import { PrivacyOverlay } from '../src/components/PrivacyOverlay';
-import { buildNeutralResetAction, buildReturnResetAction } from '../src/navigation/quickExit';
 import { useSafetyStore } from '../src/store/safetyStore';
 
 // Expo Router walks Stack children with React.Children.toArray and expects each
@@ -29,25 +27,6 @@ const neutralScreen = <Stack.Screen name="neutral" />;
 
 export default function RootLayout() {
   const quickExitActive = useSafetyStore((state) => state.quickExitActive);
-  const navigationRef = useNavigationContainerRef();
-  const wasActive = useRef(false);
-
-  useEffect(() => {
-    if (!navigationRef.isReady()) return;
-
-    if (quickExitActive) {
-      wasActive.current = true;
-      // Replace the whole stack: no sensitive screen remains in history.
-      navigationRef.reset(buildNeutralResetAction() as never);
-      return;
-    }
-
-    if (wasActive.current) {
-      wasActive.current = false;
-      // A fresh normal stack; the index route applies the onboarding redirect.
-      navigationRef.reset(buildReturnResetAction() as never);
-    }
-  }, [quickExitActive, navigationRef]);
 
   return (
     <AppProviders>
