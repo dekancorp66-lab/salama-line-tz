@@ -269,7 +269,7 @@
   },
   "errors": {
     "generic": "Kuna hitilafu. Tafadhali jaribu tena.",
-    "network": "Hakuna muunganisho wa mtandao.",
+    "network": "Haiwezi kufikia seva. Angalia muunganisho wako na anwani ya API.",
     "timeout": "Ombi lilichukua muda mrefu.",
     "unavailable": "Huduma haipatikani kwa muda.",
     "rateLimited": "Jaribio nyingi. Tafadhali subia.",

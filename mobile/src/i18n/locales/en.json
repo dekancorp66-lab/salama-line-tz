@@ -269,7 +269,7 @@
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
-    "network": "No internet connection.",
+    "network": "Cannot reach the server. Check your connection and the API address.",
     "timeout": "The request took too long.",
     "unavailable": "The service is temporarily unavailable.",
     "rateLimited": "Too many attempts. Please wait.",

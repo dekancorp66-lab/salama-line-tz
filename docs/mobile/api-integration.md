@@ -81,3 +81,15 @@ Not used by mobile: staff `POST /auth/register`, password-reset endpoints, all a
 | Notification preferences sync | No backend fields; preferences stay on-device and are labelled as such. |
 | AI provider keys / mobile LLM SDK | Provider configuration and safeguards stay in the backend; mobile only calls the two verified endpoints. |
 | AI conversation history | No backend persistence contract exists; clearing the screen discards the conversation. |
+
+## 7. Physical-device troubleshooting
+
+`errors.network` ("Cannot reach the server…") means Axios received no HTTP response. The most common cause is `EXPO_PUBLIC_API_BASE_URL=http://localhost:3000/api/v1`: on a physical phone `localhost` is the phone, not the development computer.
+
+Use a gitignored `mobile/.env.local`:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=http://<computer-lan-ip>:3000/api/v1
+```
+
+Then restart Metro with `npx expo start --tunnel --clear`; `EXPO_PUBLIC_*` values are read when Metro starts. Verify from the phone's browser that `http://<computer-lan-ip>:3000/api/v1/ai/health` returns JSON before testing the AI screen. If the browser cannot open it, the phone cannot reach the computer over LAN (Wi‑Fi client isolation, VPN, firewall or different network). An Expo tunnel fixes Metro/asset downloads but does **not** expose the backend; use a separate HTTPS tunnel for port 3000 or fix LAN reachability.
