@@ -166,6 +166,15 @@ const makeStyles = (theme: AppTheme) => StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.brandLine,
   },
+  hamburger: {
+    width: 20,
+    gap: 4,
+  },
+  hamburgerLine: {
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: theme.colors.brandStrong,
+  },
   closeControl: {
     width: theme.touchTarget,
     height: theme.touchTarget,
