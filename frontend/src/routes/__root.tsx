@@ -16,7 +16,7 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "SalamaLine" },
       { name: "description", content: en.meta.homeDescription },
-      { name: "theme-color", content: "#fffdfb" },
+      { name: "theme-color", content: "#fffafd" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

@@ -1,0 +1,44 @@
+{
+  "name": "salamaline-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*/*.test.ts"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@hookform/resolvers": "^7.0.7",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@tanstack/react-query": "^5.108.2",
+    "axios": "^1.13.2",
+    "expo": "~58.0.26",
+    "expo-clipboard": "~58.0.4",
+    "expo-constants": "~58.0.16",
+    "expo-linking": "~58.0.17",
+    "expo-notifications": "~58.1.9",
+    "expo-router": "~58.0.32",
+    "expo-secure-store": "~58.0.3",
+    "expo-status-bar": "~58.0.5",
+    "i18next": "^27.2.2",
+    "react": "19.3.0",
+    "react-hook-form": "^7.71.1",
+    "react-i18next": "^18.0.3",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
+    "zod": "^4.3.6",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "~19.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3"
+  }
+}

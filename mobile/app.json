@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "SalamaLine",
+    "slug": "salamaline-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "salamaline",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.salamaline.mobile"
+    },
+    "android": {
+      "package": "org.salamaline.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#FDF3F7",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#b0577f"
+        }
+      ]
+    ]
+  }
+}

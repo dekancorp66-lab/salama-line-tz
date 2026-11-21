@@ -52,7 +52,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     writeStoredTheme(theme);
 
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = resolvedTheme === "dark" ? "#2a2431" : "#fffdfb";
+    if (themeColor) themeColor.content = resolvedTheme === "dark" ? "#2a2431" : "#fffafd";
   }, [resolvedTheme, theme]);
 
   const setTheme = useCallback((next: Theme) => setThemeState(next), []);

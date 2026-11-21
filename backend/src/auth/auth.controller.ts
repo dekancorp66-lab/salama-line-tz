@@ -20,10 +20,26 @@ export class AuthController {
     return this.auth.register(dto);
   }
 
+  /** Public mobile registration: always creates an active, non-privileged USER. */
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('register/public')
+  registerPublic(@Body() dto: RegisterDto) {
+    return this.auth.registerPublic(dto);
+  }
+
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto);
+  }
+
+  /** Revokes all currently issued tokens for this account. */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('logout')
+  logout(@Req() req: Request & { user: any }) {
+    return this.auth.logout(req.user.id);
   }
 
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
